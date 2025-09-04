@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: model-prediction
+
+model:
+  onnx:
+    model-path: classpath:model/criteo_ctr_model.onnx
+    preprocessor-path: classpath:model/criteo_preprocessor.pkl
+    test-data-path: classpath:data/test.txt
+    batch-size: 100
+    optimization-level: 1
+  schedule:
+    cron: "*/10 * * * * ?"  # 每10秒执行一次
+
+logging:
+  level:
+    org:
+      springframework:
+        web: info
+  file:
+    path: /var/logs/dsp-home/logs
