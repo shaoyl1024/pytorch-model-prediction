@@ -1,46 +1,59 @@
 package com.example.demo.config;
 
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.*;
+import com.example.demo.exception.ModelException;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 /**
  * ONNX 模型会话配置类
  * <p>
  * 核心职责：创建并配置 ONNX Runtime 的环境（OrtEnvironment）和会话（OrtSession），
- * 负责模型加载、会话参数设置（如优化级别、内存限制），并确保资源在应用生命周期内
- * 正确初始化与释放，为模型预测提供高性能的推理环境。
+ * 支持灵活的参数配置、多种模型加载方式和完善的资源管理。
  *
  * @author charles
- * @version 1.0.0
+ * @version 2.0.0
  * @date 2025/9/4 14:30
  */
 @Configuration
 @Slf4j
-public class OnnxSessionConfig {
+@Data
+public class OnnxConfig {
 
     /**
      * ONNX 模型文件路径（从配置文件读取）
      */
-    @Value("${model.onnx.model-path}")
+    @Value("${model.path}")
     private Resource onnxModelResource;
+
+    @Value("${model.input-node}")
+    private String inputNodeName; // 输入节点名（如"criteo_features"）
+
+    @Value("${model.output-node}")
+    private String outputNodeName; // 输出节点名（如"ctr_prob"）
 
     /**
      * 初始化 ONNX 环境（全局单例）
      */
     @Bean(destroyMethod = "close")
-    public OrtEnvironment ortEnvironment() throws OrtException {
-        OrtEnvironment env = OrtEnvironment.getEnvironment();
-        log.info("ONNX Runtime environment initialized successfully");
-        return env;
+    public OrtEnvironment ortEnvironment() {
+        try {
+            return OrtEnvironment.getEnvironment();
+        } catch (Exception e) {
+            log.error("创建ONNX环境失败", e);
+            throw new ModelException("创建ONNX环境失败", e);
+        }
     }
 
     /**

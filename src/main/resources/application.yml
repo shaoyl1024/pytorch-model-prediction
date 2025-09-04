@@ -1,21 +1,27 @@
-spring:
-  application:
-    name: model-prediction
-
+# 模型配置
 model:
-  onnx:
-    model-path: classpath:model/criteo_ctr_model.onnx
-    preprocessor-path: classpath:model/criteo_preprocessor.pkl
-    test-data-path: classpath:data/test.txt
-    batch-size: 100
-    optimization-level: 1
-  schedule:
-    cron: "*/10 * * * * ?"  # 每10秒执行一次
+  path: classpath:model/criteo_ctr_model.onnx
+  input-node: criteo_features
+  output-node: ctr_prob
 
+# 预处理配置
+preprocessor:
+  config-path: classpath:model/criteo_preprocessor.json
+
+# 数据配置
+data:
+  test-path: classpath:data/test.txt
+  separator: "\t"  # 假设test.txt是TSV格式
+
+# 定时任务配置
+schedule:
+  cron: 0/10 * * * * ?  # 每5分钟执行一次
+
+# 日志配置
 logging:
   level:
-    org:
-      springframework:
-        web: info
-  file:
-    path: /var/logs/dsp-home/logs
+    root: INFO
+    com.example.demo: DEBUG
+    ai.onnxruntime: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
