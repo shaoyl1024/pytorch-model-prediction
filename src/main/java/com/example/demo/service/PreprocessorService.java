@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -58,12 +60,12 @@ public class PreprocessorService {
 
     private float processNumericFeature(String value, PreprocessorParam.NumericParam param) {
         try {
-            if (value.isEmpty()) {
-                return (float) param.getMedian();
-            }
-            double numValue = Double.parseDouble(value);
-            // 标准化
-            return (float) ((numValue - param.getMean()) / param.getScale());
+            double numValue = value.isEmpty()? param.getMedian(): Double.parseDouble(value);
+            numValue = Math.max(numValue, -0.999);
+
+            double logValue = Math.log1p(numValue);
+
+            return (float) ((logValue - param.getMean()) / param.getScale());
         } catch (NumberFormatException e) {
             log.warn("数值特征解析失败，使用默认值: {}", param.getMedian());
             return (float) param.getMedian();
@@ -71,9 +73,35 @@ public class PreprocessorService {
     }
 
     private float processCategoricalFeature(String value, PreprocessorParam.CategoricalParam param) {
-        if (value.isEmpty() || !param.getCodeMap().containsKey(value)) {
-            return param.getDefaultCode();
+
+
+        // 1. 处理空值/空白值 → 替换为 "UNK"（与 Python fillna("UNK") 一致）
+        String processedValue = (value == null || value.trim().isEmpty()) ? "UNK" : value.trim();
+
+        // 2. 高频值过滤 → 不在 highFreq 中的值 → 替换为 "UNK"（与 Python 低频归并一致）
+        List<String> highFreqList = param.getHighFreqValues();
+        if (highFreqList != null && !highFreqList.isEmpty()) {
+            Set<String> highFreqSet = new HashSet<>(highFreqList);
+            if (!highFreqSet.contains(processedValue)) {
+                processedValue = "UNK";
+                log.warn("低频值归并 | 原始值: {}, 归并为: UNK", value);
+            }
         }
-        return param.getCodeMap().get(value);
+
+        // 3. 编码映射 → 未找到时返回 defaultCode=0（与业务定义一致）
+        Map<String, Integer> codeMap = param.getCodeMap();
+        if (codeMap == null) {
+            log.warn("codeMap 为 null，返回默认编码: 0");
+            return -1f; // 无编码表时返回0
+        }
+
+        // 从 codeMap 取编码，未找到则返回 defaultCode=0（核心调整点）
+        Integer code = codeMap.get(processedValue);
+        if (code == null) {
+            log.debug("编码未找到 | 处理后值: {}, 返回默认编码: 0", processedValue);
+            return -1f;
+        }
+
+        return code.floatValue();
     }
 }

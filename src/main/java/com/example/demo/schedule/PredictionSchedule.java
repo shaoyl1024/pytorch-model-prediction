@@ -80,8 +80,7 @@ public class PredictionSchedule {
         // 输出预测结果
         log.info("预测结果:");
         for (int i = 0; i < results.size(); i++) {
-            log.info("样本ID: {}, CTR预测值: {}, 特征值：{}",
-                    i, results.get(i).getCtrProbabilityFormatted(), JSONObject.toJSONString(results.get(i).getRawFeatures()));
+            log.info("样本ID: {}, CTR预测值: {}", i + 1, results.get(i).getCtrProbabilityFormatted());
         }
 
         // 可以在这里添加结果存储逻辑（如写入文件或数据库）

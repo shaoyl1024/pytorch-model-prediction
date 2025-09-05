@@ -30,7 +30,7 @@ public class DataLoaderService {
     private final PreprocessorParam preprocessorParam;
 
     // 限制最大加载数量为10条
-    private static final int MAX_RECORDS = 10;
+    private static final int MAX_RECORDS = 20;
 
     /**
      * 加载测试数据（最多加载10条，使用预定义字段配置）
