@@ -1,10 +1,15 @@
 package com.example.demo.service;
 
-import ai.onnxruntime.*;
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
+import com.example.demo.config.OnnxConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +23,11 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ModelPredictionService {
+public class PredictionService {
 
     private final OrtEnvironment ortEnvironment;
     private final OrtSession ortSession;
+    private final OnnxConfig onnxConfig;
 
     /**
      * 批量预测：输入预处理后的特征数组，返回点击概率
@@ -29,7 +35,7 @@ public class ModelPredictionService {
      * @param inputs 预处理后的特征（shape: [batchSize, 39]）
      * @return 点击概率数组
      */
-    public double[] predictBatch(float[][] inputs) throws OrtException {
+    public float[] predict(float[][] inputs) throws OrtException {
         // 1. 验证输入有效性
         if (inputs == null || inputs.length == 0) {
             throw new IllegalArgumentException("Input features cannot be empty");
@@ -51,8 +57,7 @@ public class ModelPredictionService {
         // 3. 定义输入形状 [batchSize, 39]
         long[] inputShape = new long[]{batchSize, featureDim};
 
-        // 4. 创建ONNX张量（关键修复：使用正确的方法重载）
-        // 注意：根据ONNX Runtime版本，可能需要调整方法参数
+        // 4. 创建ONNX张量
         OnnxTensor inputTensor;
         try {
             // 版本1.16.x推荐用法：使用FloatBuffer创建张量
@@ -67,14 +72,14 @@ public class ModelPredictionService {
 
         // 5. 构造模型输入（输入节点名必须与ONNX模型一致）
         Map<String, OnnxTensor> modelInputs = new HashMap<>();
-        modelInputs.put("criteo_features", inputTensor); // 与Python导出的输入名一致
+        modelInputs.put(onnxConfig.getInputNodeName(), inputTensor); // 与Python导出的输入名一致
 
         // 6. 执行模型推理
         try (OrtSession.Result result = ortSession.run(modelInputs)) {
             // 7. 解析输出结果
             OnnxTensor outputTensor = (OnnxTensor) result.get(0); // 获取第一个输出节点
 
-            // 正确代码：先获取二维数组，再提取为一维数组
+            // 先获取二维数组，再提取为一维数组
             float[][] output2D = (float[][]) outputTensor.getValue();
             float[] outputProbs = new float[output2D.length];
 
@@ -87,11 +92,14 @@ public class ModelPredictionService {
                 outputProbs[i] = output2D[i][0]; // 提取当前样本的预测概率
             }
             // 8. 转换为double数组返回
-            double[] ctrProbs = new double[outputProbs.length];
+            float[] ctrProbs = new float[outputProbs.length];
             for (int i = 0; i < outputProbs.length; i++) {
                 ctrProbs[i] = outputProbs[i];
             }
             return ctrProbs;
+        } catch (Exception e) {
+            log.error("模型推理失败", e);
+            throw new com.example.demo.exception.ModelException("模型推理失败", e);
         } finally {
             // 9. 释放资源
             if (inputTensor != null) {
@@ -99,4 +107,5 @@ public class ModelPredictionService {
             }
         }
     }
+
 }
