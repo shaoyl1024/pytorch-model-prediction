@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.domain;
 
 /**
  * @Description 模型版本枚举，约束支持的模型类型

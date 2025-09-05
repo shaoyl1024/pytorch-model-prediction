@@ -1,6 +1,6 @@
 package com.example.demo.config;
 
-import com.example.demo.model.PreprocessorParam;
+import com.example.demo.domain.PreprocessorParam;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +11,12 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * @Description 预处理配置类
+ * @Author charles
+ * @Date 2025/9/6 00:28
+ * @Version 1.0.0
+ */
 @Configuration
 @Slf4j
 public class PreprocessorConfig {
@@ -23,13 +29,15 @@ public class PreprocessorConfig {
         try (InputStream is = preprocessorResource.getInputStream()) {
             ObjectMapper objectMapper = new ObjectMapper();
             PreprocessorParam param = objectMapper.readValue(is, PreprocessorParam.class);
-            log.info("成功加载预处理配置，包含{}个数值特征和{}个分类特征",
+
+            log.info("Preprocessing configuration loaded successfully. Number of numeric features: {}, number of categorical features: {}",
                     param.getConfig().getNumCols().size(),
                     param.getConfig().getCatCols().size());
+
             return param;
         } catch (IOException e) {
-            log.error("加载预处理配置失败，文件路径：{}", preprocessorResource, e);
-            throw new RuntimeException("预处理配置文件加载失败", e);
+            log.error("Failed to load preprocessing configuration. File path: {}", preprocessorResource, e);
+            throw new RuntimeException("Preprocessing configuration file loading failed", e);
         }
     }
 }

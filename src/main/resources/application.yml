@@ -5,7 +5,8 @@ spring:
 model:
   test:
     data-path: classpath:data/test.txt
-    separator: "\t"  # 假设test.txt是TSV格式
+    separator: "\t"  # test.txt是TSV格式
+    cron: "*/10 * * * * ?"  # 每10秒执行一次
   ctr_v1:
     model-path: classpath:model/ctr/202509v1/criteo_ctr_model.onnx
     preprocessor-path: classpath:model/ctr/202509v1/criteo_preprocessor.pkl
@@ -13,7 +14,6 @@ model:
     output-node: ctr_prob
     batch-size: 100
     optimization-level: 1
-    cron: "*/10 * * * * ?"  # 每10秒执行一次
   ctr_v2:
     model-path: classpath:model/ctr/202509v2/criteo_ctr_model.onnx
     preprocessor-path: classpath:model/ctr/202509v2/criteo_preprocessor.json
@@ -21,5 +21,4 @@ model:
     output-node: ctr_prob
     batch-size: 100
     optimization-level: 1
-    cron: "*/10 * * * * ?"  # 每10秒执行一次
 

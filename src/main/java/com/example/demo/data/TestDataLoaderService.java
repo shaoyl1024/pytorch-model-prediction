@@ -1,7 +1,7 @@
-package com.example.demo.service;
+package com.example.demo.data;
 
 import com.example.demo.exception.ModelException;
-import com.example.demo.model.PredictionResult;
+import com.example.demo.domain.PredictionResult;
 import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,20 +29,19 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DataLoaderService {
+public class TestDataLoaderService {
     @Value("${model.test.data-path}")
     private Resource testDataResource;
 
     @Value("${model.test.separator}")
     private String separator;
 
-    // 限制最大加载数量为10条
     private static final int MAX_RECORDS = 20;
 
     /**
      * 测试数据表头 - 采用方式1
-     * 方式1：硬编码
-     * 方式2：从criteo_preprocessor.json文件映射到PreprocessorParam对象中解析
+     * <p>方式1：硬编码</p>
+     * <p>方式2：从criteo_preprocessor.json文件映射到PreprocessorParam对象中解析</p>
      */
     private static final String[] NUM_COLS = {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10", "I11", "I12", "I13"};
     private static final String[] CAT_COLS = {"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26"};
@@ -80,21 +79,21 @@ public class DataLoaderService {
                 loadedCount++;
             }
 
-            log.info("数据加载完成 | 实际加载: {} 条 (最大限制: {})", loadedCount, MAX_RECORDS);
+            log.info("Test data loading completed | Actually loaded: {} records (Max limit: {})", loadedCount, MAX_RECORDS);
             return rawSamples;
 
         } catch (IOException e) {
-            log.error("加载测试数据时发生IO错误", e);
-            throw new ModelException("数据加载失败", e);
+            log.error("IO error occurred while loading test data", e);
+            throw new ModelException("Test data loading failed", e);
         }
     }
 
     private List<String> getAndValidatePredefinedFields() {
         List<String> numericFields = cleanAndValidateFieldList(
-                List.of(NUM_COLS), "数值型字段(num_cols)");
+                List.of(NUM_COLS), "numeric fields (num_cols)");
 
         List<String> categoricalFields = cleanAndValidateFieldList(
-                List.of(CAT_COLS), "分类型字段(cat_cols)");
+                List.of(CAT_COLS), "categorical fields (cat_cols)");
 
         List<String> allFields = new ArrayList<>(numericFields);
         List<String> duplicateFields = categoricalFields.stream()
@@ -103,27 +102,37 @@ public class DataLoaderService {
 
         if (!duplicateFields.isEmpty()) {
             throw new ModelException(
-                    "预定义字段中存在重复: " + duplicateFields,
+                    "Duplicate fields found in predefined fields: " + duplicateFields,
                     "DUPLICATE_PREDEFINED_FIELDS");
         }
 
         allFields.addAll(categoricalFields);
-        log.info("预定义字段加载完成 | 数值型: {}, 分类型: {}, 总计: {}",
+        log.info("Predefined fields loaded successfully | Numeric fields: {}, Categorical fields: {}, Total fields: {}",
                 numericFields.size(), categoricalFields.size(), allFields.size());
 
         return allFields;
     }
 
+    /**
+     * 清洗并验证字段列表
+     * 清洗逻辑：过滤空字段（若有）；验证逻辑：字段列表非null
+     *
+     * @param rawFields 原始字段列表
+     * @param fieldType 字段类型描述（用于日志和异常信息）
+     * @return 清洗后的非空字段列表
+     */
     private List<String> cleanAndValidateFieldList(List<String> rawFields, String fieldType) {
         if (rawFields == null) {
-            throw new ModelException(fieldType + "配置为null", "NULL_FIELD_CONFIG");
+            throw new ModelException("Configuration for " + fieldType + " is null", "NULL_FIELD_CONFIG");
         }
 
+        // 过滤空字符串字段（若存在配置错误导致的空字段）
         List<String> cleanedFields = rawFields.stream()
+                .filter(field -> field != null && !field.trim().isEmpty())
                 .collect(Collectors.toList());
 
         if (cleanedFields.isEmpty()) {
-            log.warn("{}清洗后为空", fieldType);
+            log.warn("{} is empty after cleaning", fieldType);
         }
 
         return cleanedFields;

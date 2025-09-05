@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -9,6 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @Description 预处理参数配置
+ * @Author charles
+ * @Date 2025/9/3 20:51
+ * @Version 1.0.0
+ */
 @Data
 public class PreprocessorParam {
 
@@ -22,7 +28,7 @@ public class PreprocessorParam {
 
     @Data
     @AllArgsConstructor
-    @NoArgsConstructor  // 新增无参构造函数，允许Jackson反序列化
+    @NoArgsConstructor
     public static class NumericParam {
         private Double mean;
         private Double median;
@@ -30,8 +36,8 @@ public class PreprocessorParam {
     }
 
     @Data
-    @NoArgsConstructor  // 关键：添加无参构造函数（因JSON无defaultCode字段）
-    @AllArgsConstructor // 保留全参构造，方便手动创建对象
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CategoricalParam {
         @JsonProperty("high_freq")
         private Set<String> highFreqValues;
@@ -39,13 +45,12 @@ public class PreprocessorParam {
         @JsonProperty("code_map")
         private Map<String, Integer> codeMap;
 
-        // JSON中无此字段，反序列化时会保持默认值（-1）
-        private int defaultCode = -1;  // 显式设置默认值，避免null
+        private int defaultCode = -1;
     }
 
     @Data
     @AllArgsConstructor
-    @NoArgsConstructor  // 新增无参构造函数
+    @NoArgsConstructor
     public static class FeatureConfig {
         @JsonProperty("num_cols")
         private List<String> numCols;
