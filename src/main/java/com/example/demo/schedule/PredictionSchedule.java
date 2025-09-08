@@ -55,7 +55,7 @@ public class PredictionSchedule {
             log.info("Successfully loaded {} test samples from data source", rawSamples.size());
 
             // 步骤2：使用CTR v2模型执行预测（定时任务默认模型）
-            float[] ctrProbabilities = ctrV1Service.predict(rawSamples);
+            float[] ctrProbabilities = ctrV2Service.predict(rawSamples);
             if (ctrProbabilities.length != rawSamples.size()) {
                 log.warn("Prediction result count mismatch: {} probabilities for {} samples",
                         ctrProbabilities.length, rawSamples.size());

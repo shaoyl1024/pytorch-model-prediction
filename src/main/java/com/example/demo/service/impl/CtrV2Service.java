@@ -16,7 +16,7 @@ public class CtrV2Service extends AbstractModelService {
 
     private final AbstractPreprocessor preprocessor;
 
-    public CtrV2Service(@Qualifier("ctrV1Preprocessor") AbstractPreprocessor preprocessor) {
+    public CtrV2Service(@Qualifier("ctrV2Preprocessor") AbstractPreprocessor preprocessor) {
         this.preprocessor = preprocessor;
     }
 
