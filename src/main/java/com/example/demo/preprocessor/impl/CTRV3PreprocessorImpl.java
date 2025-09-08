@@ -1,6 +1,6 @@
 package com.example.demo.preprocessor.impl;
 
-import com.example.demo.preprocessor.config.ctrv2.CtrV2PreprocessorParam;
+import com.example.demo.preprocessor.config.ctrv3.CtrV3PreprocessorParam;
 import com.example.demo.exception.ModelException;
 import com.example.demo.preprocessor.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
@@ -12,21 +12,21 @@ import java.math.RoundingMode;
 import java.util.*;
 
 /**
- * @Description 基于配置类的CTR v2预处理器
+ * @Description 基于配置类的CTR v3预处理器
  * @Author charles
  * @Date 2025/9/6 01:20
  * @Version 1.0.0
  */
-@Service("ctrV2Preprocessor")
+@Service("ctrV3Preprocessor")
 @Slf4j
 @RequiredArgsConstructor
-public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
+public class CTRV3PreprocessorImpl extends AbstractPreprocessor {
 
     // ============================================================================
     // 依赖与缓存：外部注入的配置类及本地缓存的特征列（避免重复解析）
     // ============================================================================
     /** 预处理配置类（由PreprocessorConfig注入，包含数值/分类特征的所有规则） */
-    private final CtrV2PreprocessorParam preprocessorParam;
+    private final CtrV3PreprocessorParam preprocessorParam;
     /** 缓存的数值特征列名（初始化时从配置类提取，避免重复调用getConfig()） */
     private List<String> numCols;
     /** 缓存的分类特征列名（初始化时从配置类提取，避免重复调用getConfig()） */
@@ -43,12 +43,12 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
      */
     @Override
     public void initParams() {
-        log.info("Initializing CTR v2 preprocessor from config");
-        CtrV2PreprocessorParam.FeatureConfig featureConfig = preprocessorParam.getConfig();
+        log.info("Initializing CTR v3 preprocessor from config");
+        CtrV3PreprocessorParam.FeatureConfig featureConfig = preprocessorParam.getConfig();
 
         // 校验核心配置非空
         if (featureConfig == null) {
-            throw new ModelException("CTR v2: FeatureConfig is null in preprocessor param", "NULL_FEATURE_CONFIG");
+            throw new ModelException("CTR v3: FeatureConfig is null in preprocessor param", "NULL_FEATURE_CONFIG");
         }
 
         // 提取并缓存特征列（转为不可修改列表，避免意外篡改）
@@ -57,12 +57,12 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
 
         // 校验配置完整性（确保特征列和参数匹配）
         validateConfigParams();
-        log.info("CTR v2 preprocessor initialized successfully | Numeric cols: {}, Categorical cols: {}",
+        log.info("CTR v3 preprocessor initialized successfully | Numeric cols: {}, Categorical cols: {}",
                 numCols.size(), catCols.size());
     }
 
     /**
-     * 获取CTR v2的数值特征列名（实现父类抽象方法）
+     * 获取CTR v3的数值特征列名（实现父类抽象方法）
      * @return 初始化时缓存的数值特征列列表（不可修改）
      */
     @Override
@@ -71,7 +71,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
     }
 
     /**
-     * 获取CTR v2的分类特征列名（实现父类抽象方法）
+     * 获取CTR v3的分类特征列名（实现父类抽象方法）
      * @return 初始化时缓存的分类特征列列表（不可修改）
      */
     @Override
@@ -86,18 +86,18 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
      * @return 数值特征预处理参数DTO（无匹配列时返回默认参数，避免空指针）
      */
     @Override
-    protected CtrV2PreprocessorParam.NumericParam getNumericParam(String numericCol) {
+    protected CtrV3PreprocessorParam.NumericParam getNumericParam(String numericCol) {
         // 校验列名合法性
         if (!numCols.contains(numericCol)) {
-            log.warn("CTR v2: Invalid numeric column '{}' (not in config list)", numericCol);
-            return new CtrV2PreprocessorParam.NumericParam(0.0, 0.0, 1.0); // 默认参数：无标准化效果
+            log.warn("CTR v3: Invalid numeric column '{}' (not in config list)", numericCol);
+            return new CtrV3PreprocessorParam.NumericParam(0.0, 0.0, 1.0); // 默认参数：无标准化效果
         }
 
         // 从配置类获取参数（处理空值，避免NPE）
-        CtrV2PreprocessorParam.NumericParam rawParam = preprocessorParam.getNumericParams().get(numericCol);
+        CtrV3PreprocessorParam.NumericParam rawParam = preprocessorParam.getNumericParams().get(numericCol);
         if (rawParam == null) {
-            log.warn("CTR v2: No numeric param found for column '{}', use default", numericCol);
-            return new CtrV2PreprocessorParam.NumericParam(0.0, 0.0, 1.0);
+            log.warn("CTR v3: No numeric param found for column '{}', use default", numericCol);
+            return new CtrV3PreprocessorParam.NumericParam(0.0, 0.0, 1.0);
         }
 
         // 空安全处理：参数为null时用默认值
@@ -105,7 +105,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
         double mean = rawParam.getMean() != null ? rawParam.getMean() : 0.0;
         double scale = rawParam.getScale() != null ? rawParam.getScale() : 1.0;
 
-        return new CtrV2PreprocessorParam.NumericParam(median, mean, scale);
+        return new CtrV3PreprocessorParam.NumericParam(median, mean, scale);
     }
 
     /**
@@ -115,18 +115,18 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
      * @return 分类特征预处理参数DTO（无匹配列时返回空集合，避免空指针）
      */
     @Override
-    protected CtrV2PreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol) {
+    protected CtrV3PreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol) {
         // 校验列名合法性
         if (!catCols.contains(categoricalCol)) {
-            log.warn("CTR v2: Invalid categorical column '{}' (not in config list)", categoricalCol);
-            return new CtrV2PreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
+            log.warn("CTR v3: Invalid categorical column '{}' (not in config list)", categoricalCol);
+            return new CtrV3PreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
         }
 
         // 从配置类获取参数（处理空值，避免NPE）
-        CtrV2PreprocessorParam.CategoricalParam rawParam = preprocessorParam.getCategoricalParams().get(categoricalCol);
+        CtrV3PreprocessorParam.CategoricalParam rawParam = preprocessorParam.getCategoricalParams().get(categoricalCol);
         if (rawParam == null) {
-            log.warn("CTR v2: No categorical param found for column '{}', use default", categoricalCol);
-            return new CtrV2PreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
+            log.warn("CTR v3: No categorical param found for column '{}', use default", categoricalCol);
+            return new CtrV3PreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
         }
 
         // 空安全处理：参数为null时用默认值
@@ -138,7 +138,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
                 : Collections.emptyMap();
         int defaultCode = -1; // 未知值默认编码（与模型训练逻辑保持一致）
 
-        return new CtrV2PreprocessorParam.CategoricalParam(highFreqSet, codeMap, defaultCode);
+        return new CtrV3PreprocessorParam.CategoricalParam(highFreqSet, codeMap, defaultCode);
     }
 
     /**
@@ -151,14 +151,14 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
         // 检查数值特征缺失（仅警告）
         for (String numCol : numCols) {
             if (!rawSample.containsKey(numCol)) {
-                log.warn("CTR v2: Missing numeric feature '{}', will use empty value handling", numCol);
+                log.warn("CTR v3: Missing numeric feature '{}', will use empty value handling", numCol);
             }
         }
 
         // 检查分类特征缺失（仅警告）
         for (String catCol : catCols) {
             if (!rawSample.containsKey(catCol)) {
-                log.warn("CTR v2: Missing categorical feature '{}', will use empty value handling", catCol);
+                log.warn("CTR v3: Missing categorical feature '{}', will use empty value handling", catCol);
             }
         }
     }
@@ -173,14 +173,14 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
      */
     @Override
     protected float processNumericFeature(String rawVal, String numericCol) {
-        CtrV2PreprocessorParam.NumericParam param = getNumericParam(numericCol);
+        CtrV3PreprocessorParam.NumericParam param = getNumericParam(numericCol);
         if (param == null) {
-            log.error("CTR v2: Numeric param DTO is null for column '{}'", numericCol);
+            log.error("CTR v3: Numeric param DTO is null for column '{}'", numericCol);
             return 0.0f;
         }
 
         try {
-            // 1. 处理缺失值/空值：用均值填充（CTR v2特有逻辑）
+            // 1. 处理缺失值/空值：用均值填充（CTR v3特有逻辑）
             double numValue = (rawVal == null || rawVal.trim().isEmpty())
                     ? param.getMean()
                     : Double.parseDouble(rawVal.trim());
@@ -201,7 +201,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
 
         } catch (NumberFormatException e) {
             // 解析失败时用中位数填充（降级策略）
-            log.warn("CTR v2: Failed to parse numeric value '{}' for column '{}', use median: {}",
+            log.warn("CTR v3: Failed to parse numeric value '{}' for column '{}', use median: {}",
                     rawVal, numericCol, param.getMedian());
             return param.getMedian().floatValue();
         }
@@ -216,9 +216,9 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
      */
     @Override
     protected int processCategoricalFeature(String rawVal, String categoricalCol) {
-        CtrV2PreprocessorParam.CategoricalParam paramDTO = getCategoricalParam(categoricalCol);
+        CtrV3PreprocessorParam.CategoricalParam paramDTO = getCategoricalParam(categoricalCol);
         if (paramDTO == null) {
-            log.error("CTR v2: Categorical param DTO is null for column '{}'", categoricalCol);
+            log.error("CTR v3: Categorical param DTO is null for column '{}'", categoricalCol);
             return -1; // 返回默认未知编码
         }
 
@@ -230,7 +230,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
         // 2. 低频值过滤：不在高频集合中的值→UNK（减少稀疏性，符合配置规则）
         Set<String> highFreqSet = paramDTO.getHighFreqValues();
         if (!highFreqSet.isEmpty() && !highFreqSet.contains(processedVal)) {
-            log.debug("CTR v2: Low-frequency value '{}' for column '{}' replaced with UNK",
+            log.debug("CTR v3: Low-frequency value '{}' for column '{}' replaced with UNK",
                     processedVal, categoricalCol);
             processedVal = UNK_MARKER;
         }
@@ -239,7 +239,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
         Map<String, Integer> codeMap = paramDTO.getCodeMap();
         Integer code = codeMap.getOrDefault(processedVal, paramDTO.getDefaultCode());
         if (code == paramDTO.getDefaultCode()) {
-            log.debug("CTR v2: Value '{}' for column '{}' not in codeMap, use default code: {}",
+            log.debug("CTR v3: Value '{}' for column '{}' not in codeMap, use default code: {}",
                     processedVal, categoricalCol, paramDTO.getDefaultCode());
         }
 
@@ -258,12 +258,12 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
     private void validateConfigParams() {
         // 校验数值特征列非空
         if (numCols == null || numCols.isEmpty()) {
-            throw new ModelException("CTR v2: Numeric columns in config are null or empty", "EMPTY_NUM_COLS");
+            throw new ModelException("CTR v3: Numeric columns in config are null or empty", "EMPTY_NUM_COLS");
         }
 
         // 校验分类特征列非空
         if (catCols == null || catCols.isEmpty()) {
-            throw new ModelException("CTR v2: Categorical columns in config are null or empty", "EMPTY_CAT_COLS");
+            throw new ModelException("CTR v3: Categorical columns in config are null or empty", "EMPTY_CAT_COLS");
         }
 
         // 校验数值参数数量匹配（警告级，允许部分缺失但记录日志）
@@ -271,7 +271,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
                 ? preprocessorParam.getNumericParams().size()
                 : 0;
         if (numericParamCount != numCols.size()) {
-            log.warn("CTR v2: Numeric param count mismatch (config has: {}, required: {})",
+            log.warn("CTR v3: Numeric param count mismatch (config has: {}, required: {})",
                     numericParamCount, numCols.size());
         }
 
@@ -280,7 +280,7 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
                 ? preprocessorParam.getCategoricalParams().size()
                 : 0;
         if (categoricalParamCount != catCols.size()) {
-            log.warn("CTR v2: Categorical param count mismatch (config has: {}, required: {})",
+            log.warn("CTR v3: Categorical param count mismatch (config has: {}, required: {})",
                     categoricalParamCount, catCols.size());
         }
     }

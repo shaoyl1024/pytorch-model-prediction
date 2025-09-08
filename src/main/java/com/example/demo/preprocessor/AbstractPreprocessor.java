@@ -1,6 +1,7 @@
 package com.example.demo.preprocessor;
 
-import com.example.demo.domain.PreprocessorParam;
+import com.example.demo.preprocessor.config.BasePreprocessorParam;
+import com.example.demo.preprocessor.config.ctrv2.CtrV2PreprocessorParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -74,7 +75,7 @@ public abstract class AbstractPreprocessor {
      * @param numericCol 数值特征列名（如 "I1"）
      * @return 该特征的预处理参数DTO（NumericParam）
      */
-    protected abstract PreprocessorParam.NumericParam getNumericParam(String numericCol);
+    protected abstract BasePreprocessorParam.NumericParam getNumericParam(String numericCol);
 
     /**
      * 根据分类特征名获取对应的预处理参数
@@ -83,7 +84,7 @@ public abstract class AbstractPreprocessor {
      * @param categoricalCol 分类特征列名（如 "C1"）
      * @return 该特征的预处理参数DTO（CategoricalParam）
      */
-    protected abstract PreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol);
+    protected abstract BasePreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol);
 
     /**
      * 验证单条原始样本的合法性

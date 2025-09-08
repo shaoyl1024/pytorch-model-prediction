@@ -1,22 +1,22 @@
-package com.example.demo.domain;
+package com.example.demo.preprocessor.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * @Description 预处理参数配置
+ * @Description 公共的预处理参数
  * @Author charles
- * @Date 2025/9/3 20:51
+ * @Date 2025/9/8 17:56
  * @Version 1.0.0
  */
 @Data
-public class PreprocessorParam {
+public class BasePreprocessorParam {
 
     @JsonProperty("num_params")
     private Map<String, NumericParam> numericParams;

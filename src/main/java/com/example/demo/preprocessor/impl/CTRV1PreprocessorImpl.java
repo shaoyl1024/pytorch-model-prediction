@@ -1,8 +1,8 @@
 package com.example.demo.preprocessor.impl;
 
-import com.example.demo.domain.PreprocessorParam;
 import com.example.demo.exception.ModelException;
 import com.example.demo.preprocessor.AbstractPreprocessor;
+import com.example.demo.preprocessor.config.BasePreprocessorParam;
 import lombok.extern.slf4j.Slf4j;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
@@ -10,6 +10,7 @@ import org.python.util.PythonInterpreter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+
 import java.io.File;
 import java.util.*;
 
@@ -132,11 +133,11 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
      * @return 数值特征预处理参数DTO（无匹配列时返回默认参数，避免空指针）
      */
     @Override
-    protected PreprocessorParam.NumericParam getNumericParam(String numericCol) {
+    protected BasePreprocessorParam.NumericParam getNumericParam(String numericCol) {
         // 校验列名合法性
         if (!NUM_COLS.contains(numericCol)) {
             log.warn("CTR v1: Invalid numeric column '{}' (not in predefined list)", numericCol);
-            return new PreprocessorParam.NumericParam(0.0, 0.0, 1.0); // 默认参数：无标准化效果
+            return new BasePreprocessorParam.NumericParam(0.0, 0.0, 1.0); // 默认参数：无标准化效果
         }
 
         // 从Pickle加载的参数中取值（无值时用默认值）
@@ -145,7 +146,7 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
         double scale = scalerScale.getOrDefault(numericCol, 1.0);
 
         // 注意：CTRV1Param.NumericParam构造器顺序为（mean, median, scale）
-        return new PreprocessorParam.NumericParam(mean, median, scale);
+        return new BasePreprocessorParam.NumericParam(mean, median, scale);
     }
 
     /**
@@ -155,11 +156,11 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
      * @return 分类特征预处理参数DTO（无匹配列时返回空集合，避免空指针）
      */
     @Override
-    protected PreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol) {
+    protected BasePreprocessorParam.CategoricalParam getCategoricalParam(String categoricalCol) {
         // 校验列名合法性
         if (!CAT_COLS.contains(categoricalCol)) {
             log.warn("CTR v1: Invalid categorical column '{}' (not in predefined list)", categoricalCol);
-            return new PreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
+            return new BasePreprocessorParam.CategoricalParam(Collections.emptySet(), Collections.emptyMap(), -1);
         }
 
         // 从Pickle加载的参数中取值（无值时用空集合/默认编码）
@@ -167,7 +168,7 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
         Map<String, Integer> codeMap = labelEncoders.getOrDefault(categoricalCol, Collections.emptyMap());
         int defaultCode = -1; // 未知值默认编码（与模型训练时保持一致）
 
-        return new PreprocessorParam.CategoricalParam(highFreqSet, codeMap, defaultCode);
+        return new BasePreprocessorParam.CategoricalParam(highFreqSet, codeMap, defaultCode);
     }
 
     /**
@@ -208,7 +209,7 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
      */
     @Override
     protected float processNumericFeature(String rawVal, String numericCol) {
-        PreprocessorParam.NumericParam paramDTO = getNumericParam(numericCol);
+        BasePreprocessorParam.NumericParam paramDTO = getNumericParam(numericCol);
         if (paramDTO == null) {
             log.error("CTR v1: Numeric param DTO is null for column '{}'", numericCol);
             return 0.0f;
@@ -245,7 +246,7 @@ public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
      */
     @Override
     protected int processCategoricalFeature(String rawVal, String categoricalCol) {
-        PreprocessorParam.CategoricalParam paramDTO = getCategoricalParam(categoricalCol);
+        BasePreprocessorParam.CategoricalParam paramDTO = getCategoricalParam(categoricalCol);
         if (paramDTO == null) {
             log.error("CTR v1: Categorical param DTO is null for column '{}'", categoricalCol);
             return -1; // 返回默认未知编码

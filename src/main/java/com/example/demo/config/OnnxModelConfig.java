@@ -46,6 +46,14 @@ public class OnnxModelConfig {
     @Value("${model.ctr_v2.output-node}")
     private String outputNodeNameV2;
 
+    // ctr_v3 配置
+    @Value("${model.ctr_v3.model-path}")
+    private Resource onnxModelResourceV3;
+    @Value("${model.ctr_v2.input-node}")
+    private String inputNodeNameV3;
+    @Value("${model.ctr_v2.output-node}")
+    private String outputNodeNameV3;
+
     // -------------------------- 2. 注入ONNX环境（来自OrtEnvironmentConfig） --------------------------
     @Autowired
     private OrtEnvironment ortEnvironment;
@@ -59,6 +67,10 @@ public class OnnxModelConfig {
     @Qualifier("ortSessionV2")
     private OrtSession ortSessionV2;
 
+    @Autowired
+    @Qualifier("ortSessionV3")
+    private OrtSession ortSessionV3;
+
     // -------------------------- 4. 模型会话Bean定义 --------------------------
     @Bean(name = "ortSessionV1", destroyMethod = "close")
     public OrtSession ortSessionV1() throws OrtException, IOException {
@@ -68,6 +80,11 @@ public class OnnxModelConfig {
     @Bean(name = "ortSessionV2", destroyMethod = "close")
     public OrtSession ortSessionV2() throws OrtException, IOException {
         return createOrtSession(onnxModelResourceV2, "ctr_v2");
+    }
+
+    @Bean(name = "ortSessionV3", destroyMethod = "close")
+    public OrtSession ortSessionV3() throws OrtException, IOException {
+        return createOrtSession(onnxModelResourceV3, "ctr_v3");
     }
 
     // -------------------------- 5. 模型上下文获取方法 --------------------------
@@ -86,6 +103,9 @@ public class OnnxModelConfig {
                 break;
             case "ctr_v2":
                 modelContext = new ModelContext(ortSessionV2, inputNodeNameV2, outputNodeNameV2);
+                break;
+            case "ctr_v3":
+                modelContext = new ModelContext(ortSessionV3, inputNodeNameV3, outputNodeNameV3);
                 break;
             default:
                 throw new IllegalArgumentException(
