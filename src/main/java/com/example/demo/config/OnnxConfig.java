@@ -96,18 +96,15 @@ public class OnnxConfig {
      * @return 模型上下文
      */
     public ModelContext getModelContext(String modelVersion) {
-        String actualVersion = (modelVersion == null || modelVersion.trim().isEmpty())
-                ? "v1"
-                : modelVersion.trim().toLowerCase();
 
         ModelContext modelContext;
-        switch (actualVersion) {
-            case "v1":
+        switch (modelVersion) {
+            case "ctr_v1":
                 modelContext = new ModelContext(ortSessionV1,
                         inputNodeNameV1, outputNodeNameV1
                 );
                 break;
-            case "v2":
+            case "ctr_v2":
                 modelContext = new ModelContext(ortSessionV2,
                         inputNodeNameV2, outputNodeNameV2
                 );
@@ -119,7 +116,7 @@ public class OnnxConfig {
         }
 
         log.info("Model context matched successfully - Version: {}, Input Node: {}, Output Node: {}",
-                actualVersion, modelContext.getInputNodeName(), modelContext.getOutputNodeName());
+                modelVersion, modelContext.getInputNodeName(), modelContext.getOutputNodeName());
         return modelContext;
     }
 

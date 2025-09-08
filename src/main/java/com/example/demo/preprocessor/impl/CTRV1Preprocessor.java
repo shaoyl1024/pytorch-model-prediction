@@ -1,7 +1,8 @@
-package com.example.demo.preprocessor;
+package com.example.demo.preprocessor.impl;
 
 import com.example.demo.domain.PreprocessorParam;
 import com.example.demo.exception.ModelException;
+import com.example.demo.preprocessor.AbstractPreprocessor;
 import lombok.extern.slf4j.Slf4j;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;

@@ -1,7 +1,8 @@
-import com.example.demo.ModelPredictionApplication;
+import com.example.demo.PredictionApplication;
 import com.example.demo.data.TestDataLoaderService;
 import com.example.demo.domain.PredictionResult;
-import com.example.demo.service.impl.CtrV2Service;
+import com.example.demo.service.AbstractModelService;
+import com.example.demo.service.ModelServiceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,7 @@ import java.util.Map;
  * 集成测试：验证全流程（数据加载→特征处理→模型打分）与预期结果完全一致
  * 环境：使用真实服务组件和固定测试数据
  */
-@SpringBootTest(classes = ModelPredictionApplication.class)
+@SpringBootTest(classes = PredictionApplication.class)
 @Slf4j
 class CTRV2PredictionTest {
 
@@ -22,7 +23,8 @@ class CTRV2PredictionTest {
     private TestDataLoaderService dataLoaderService;
 
     @Autowired
-    private CtrV2Service ctrV2Service;
+    private ModelServiceFactory modelServiceFactory;
+
 
     /**
      * 核心测试：验证全流程结果与预期一致
@@ -42,7 +44,9 @@ class CTRV2PredictionTest {
         log.info("Successfully loaded {} test samples from data source", rawSamples.size());
 
         // 步骤2：使用CTR v2模型执行预测（定时任务默认模型）
-        float[] ctrProbabilities = ctrV2Service.predict(rawSamples);
+        String modelVersion = "ctr_v2";
+        AbstractModelService modelService = modelServiceFactory.getServiceByVersion(modelVersion);
+        float[] ctrProbabilities = modelService.predict(rawSamples);
         if (ctrProbabilities.length != rawSamples.size()) {
             log.warn("Prediction result count mismatch: {} probabilities for {} samples",
                     ctrProbabilities.length, rawSamples.size());

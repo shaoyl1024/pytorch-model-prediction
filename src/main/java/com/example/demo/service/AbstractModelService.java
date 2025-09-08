@@ -1,98 +1,299 @@
 package com.example.demo.service;
 
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
+import com.example.demo.config.ModelContext;
+import com.example.demo.config.OnnxConfig;
 import com.example.demo.exception.ModelException;
 import com.example.demo.preprocessor.AbstractPreprocessor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import java.nio.FloatBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @Description 模型服务抽象基类
- * <p>设计模式：基于「模板方法模式」封装预测全流程的通用逻辑，将差异化细节（预处理器、模型版本）抽象为方法，</p>
- * <p>由子类按需实现。核心目标是：统一所有模型的预测流程规范，减少重复编码，同时保留子类的个性化扩展能力。</p>
- *
- * <p>通用流程固定为：输入校验 → 特征预处理 → 模型推理 → 结果返回，子类无需修改流程，仅需实现两个抽象方法即可接入。</p>
+ * @Description 模型服务抽象基类（模板方法模式）
+ * <p>统一预测流程：输入校验 → 特征预处理 → 模型推理 → 结果返回</p>
  * @Author charles
  * @Date 2025/9/5 23:48
  * @Version 1.0.0
  */
 @Slf4j
+@RequiredArgsConstructor
 public abstract class AbstractModelService {
 
-    @Autowired
-    protected PredictionService predictionService;
+    /**
+     * ONNX运行时环境（单例，负责管理ONNX的底层资源）
+     */
+    private final OrtEnvironment ortEnvironment;
 
     /**
-     * 模板方法：通用预测流程（子类不可重写，确保流程一致性）
-     * 接收原始业务数据，经过固定流程处理后返回模型预测结果（如CTR概率）
+     * ONNX模型配置（管理多版本模型上下文，由Spring注入）
+     */
+    private final OnnxConfig onnxConfig;
+
+    // ============================================================================
+    // 抽象方法：子类必须实现的差异化逻辑
+    // ============================================================================
+
+    /**
+     * 获取当前模型的预处理器（与模型版本绑定）
+     */
+    protected abstract AbstractPreprocessor getPreprocessor();
+
+    /**
+     * 获取当前模型的版本标识（需与OnnxConfig中配置一致）
+     */
+    protected abstract String getModelVersion();
+
+
+    /**
+     * 模板方法：固定预测全流程（子类不可重写）
+     * <p>通用预测入口：接收原始数据，返回预测结果</p>
      *
-     * @param rawData 原始业务数据列表，每条数据为Map（key：特征名，value：原始特征值字符串）
-     * @return 模型预测结果数组，每个元素对应一条原始数据的预测值（与输入列表顺序一致）
-     * @throws ModelException 流程中发生任何异常（如预处理失败、推理失败）均封装为此异常抛出
+     * @param rawData 原始特征列表（每条数据为Map<String, String>）
+     * @return 预测结果数组（与输入数据顺序一致）
+     * @throws ModelException 流程异常时统一抛出
      */
     public final float[] predict(List<Map<String, String>> rawData) throws ModelException {
         try {
-            // Step 1: 输入校验（通用逻辑）- 避免空数据导致后续流程无意义执行
+            // Step 1: 输入校验（通用逻辑）
             if (rawData == null || rawData.isEmpty()) {
                 throw new IllegalArgumentException("Raw data cannot be null or empty");
             }
             int sampleCount = rawData.size();
-            log.info("Model [{}] start prediction - Sample count: {}", getModelVersion(), sampleCount);
+            String modelVersion = getModelVersion();
+            log.info("Model [{}] start prediction - Sample count: {}", modelVersion, sampleCount);
 
-            // Step 2: 特征预处理（子类实现差异化）- 调用子类指定的预处理器，将原始数据转为模型可识别的特征矩阵
-            log.debug("Model [{}] start feature preprocessing", getModelVersion());
+            // Step 2: 特征预处理（子类实现）
+            log.debug("Model [{}] start feature preprocessing", modelVersion);
             float[][] processedFeatures = getPreprocessor().batchPreprocess(rawData);
-            log.debug("Model [{}] preprocessing completed - Feature shape: {} samples × {} dimensions",
-                    getModelVersion(), processedFeatures.length, processedFeatures[0].length);
+            log.info("Model [{}] preprocessing completed - Feature shape: {}×{}",
+                    modelVersion, processedFeatures.length, processedFeatures[0].length);
 
-            // Step 3: 模型推理（通用逻辑）- 调用公共预测服务，传入子类指定的模型版本，获取预测结果
-            log.debug("Model [{}] start inference", getModelVersion());
-            float[] predictionResults = predictionService.predict(processedFeatures, getModelVersion());
+            // Step 3: 模型推理（子类实现核心逻辑，父类提供工具方法）
+            log.info("Model [{}] start inference", modelVersion);
 
-            // Step 4: 结果返回（通用逻辑）- 记录结果数量，确保与输入样本数匹配（日志仅警告，不中断流程，兼容特殊场景）
+            float[] predictionResults = doPredict(processedFeatures);
+
+            // Step 4: 结果校验与返回（通用逻辑）
             if (predictionResults.length != sampleCount) {
-                log.warn("Model [{}] prediction result count mismatch - Input samples: {}, Output results: {}",
-                        getModelVersion(), sampleCount, predictionResults.length);
+                log.warn("Model [{}] result count mismatch - Input: {}, Output: {}",
+                        modelVersion, sampleCount, predictionResults.length);
             }
-            log.info("Model [{}] prediction completed - Return {} results", getModelVersion(), predictionResults.length);
+            log.info("Model [{}] prediction completed", modelVersion);
 
             return predictionResults;
 
-        } catch (OrtException e) {
-            // 捕获ONNX推理专属异常（如会话失效、张量创建失败），封装业务异常并记录详细日志
-            log.error("Model [{}] inference failed - ONNX runtime error", getModelVersion(), e);
-            throw new ModelException("Model [" + getModelVersion() + "] inference failed", e);
-
         } catch (IllegalArgumentException e) {
-            // 捕获输入参数异常（如空数据），直接封装抛出（无需额外堆栈，异常信息已明确）
             log.error("Model [{}] invalid input - {}", getModelVersion(), e.getMessage());
             throw new ModelException("Model [" + getModelVersion() + "] invalid input: " + e.getMessage(), e);
-
         } catch (Exception e) {
-            // 捕获其他未知异常（如预处理逻辑错误），作为通用流程异常处理
             log.error("Model [{}] prediction process failed - Unexpected error", getModelVersion(), e);
             throw new ModelException("Model [" + getModelVersion() + "] prediction process failed", e);
         }
     }
 
     /**
-     * 抽象方法：获取当前模型的专属预处理器
-     * 子类实现要求：返回与当前模型匹配的预处理器实例（如CTR v1返回CtrV1Preprocessor），
-     * 确保预处理逻辑与模型训练时的特征工程规则一致。
+     * 模型通用推理逻辑实现
      *
-     * @return 当前模型的专属预处理器（AbstractPreprocessor子类实例）
+     * @param features 预处理后的特征矩阵，形状为 [样本数, 特征维度]
+     * @return 模型预测结果数组，长度与输入样本数一致
+     * @throws ModelException
      */
-    protected abstract AbstractPreprocessor getPreprocessor();
+    protected float[] doPredict(float[][] features) throws ModelException {
+        // Step 1: 输入校验（复用父类工具方法）
+        validateInputFeatures(features);
+        int batchSize = features.length;
+        int featureDim = features[0].length;
+        String modelVersion = getModelVersion(); // 获取当前版本
+        log.info("Batch prediction started - Model version: {}, Sample count: {}, Feature dimension: {}",
+                modelVersion, batchSize, featureDim);
+
+        // Step 2: 获取模型上下文（父类已处理空指针，直接使用）
+        ModelContext modelContext = getModelContext();
+        OrtSession targetSession = modelContext.getSession();
+        String inputNodeName = modelContext.getInputNodeName();
+        String outputNodeName = modelContext.getOutputNodeName();
+        log.debug("Using model resources - Session: {}, Input node: {}, Output node: {}",
+                targetSession.hashCode(), inputNodeName, outputNodeName);
+
+        // Step 3: 准备输入数据（FloatBuffer）
+        FloatBuffer inputBuffer = prepareInputBuffer(features, batchSize, featureDim);
+
+        // Step 4: 创建输入张量并执行推理（try-with-resources确保资源释放）
+        try (OnnxTensor inputTensor = createOnnxTensor(inputBuffer, new long[]{batchSize, featureDim})) {
+            // 构建输入映射（仅包含目标输入节点）
+            Map<String, OnnxTensor> inputs = Collections.singletonMap(inputNodeName, inputTensor);
+
+            // 执行推理（仅获取目标输出节点，减少内存占用）
+            try (OrtSession.Result inferenceResult = targetSession.run(inputs, Collections.singleton(outputNodeName))) {
+                // 解析结果（复用父类工具方法，自动适配输出格式）
+                return parseInferenceResult(inferenceResult, batchSize);
+            }
+        } catch (OrtException e) {
+            log.error("ONNX inference failed - Model version: {}", modelVersion, e);
+            throw new ModelException("Model inference failed (version: " + modelVersion + ")", e);
+        }
+    }
+
+
+    // ============================================================================
+    // 父类提供的工具方法（子类可直接调用）
+    // ============================================================================
 
     /**
-     * 抽象方法：获取当前模型的版本标识
-     * 子类实现要求：返回与OnnxConfig中配置一致的版本号（如"v1"、"v2"），
-     * 确保能匹配到对应的ONNX会话（OrtSession）和输入输出节点名。
-     *
-     * @return 当前模型的版本标识（非空字符串，需与OnnxConfig配置对齐）
+     * 验证特征矩阵合法性（维度一致性等）
      */
-    protected abstract String getModelVersion();
+    protected void validateInputFeatures(float[][] features) {
+        if (features == null || features.length == 0) {
+            throw new IllegalArgumentException("Feature matrix cannot be null or empty");
+        }
+        int expectedDim = features[0].length;
+        for (int i = 1; i < features.length; i++) {
+            if (features[i].length != expectedDim) {
+                throw new IllegalArgumentException("Feature dimension mismatch at sample " + i);
+            }
+        }
+    }
+
+    /**
+     * 准备ONNX输入缓冲区（将二维特征转为FloatBuffer）
+     */
+    protected FloatBuffer prepareInputBuffer(float[][] features, int batchSize, int featureDim) {
+        FloatBuffer buffer = FloatBuffer.allocate(batchSize * featureDim);
+        for (float[] sample : features) {
+            buffer.put(sample);
+        }
+        buffer.rewind();
+        return buffer;
+    }
+
+
+    /**
+     * 创建ONNX输入张量（兼容不同版本API）
+     */
+    protected OnnxTensor createOnnxTensor(FloatBuffer inputBuffer, long[] inputShape) throws OrtException {
+        try {
+            return OnnxTensor.createTensor(ortEnvironment, inputBuffer, inputShape);
+        } catch (OrtException e) {
+            log.error("Fallback to float[] mode for tensor creation: {}", e.getMessage());
+            float[] inputArray = new float[inputBuffer.capacity()];
+            inputBuffer.rewind();
+            inputBuffer.get(inputArray);
+            return OnnxTensor.createTensor(ortEnvironment, FloatBuffer.wrap(inputArray), inputShape);
+        }
+    }
+
+    /**
+     * 获取模型上下文（会话+节点名）
+     */
+    protected ModelContext getModelContext() {
+        String version = getModelVersion();
+        ModelContext context = onnxConfig.getModelContext(version);
+        if (context == null || context.getSession() == null) {
+            log.error("Model context not initialized for version: {}", version);
+            return null;
+        }
+        return context;
+    }
+
+    /**
+     * 解析推理结果张量，提取预测值数组（兼容一维/二维输出格式）
+     *
+     * <p>支持两种常见模型输出格式：
+     * <li>二维数组 [batchSize, 1]：多数分类/回归模型的标准输出</li>
+     * <li>一维数组 [batchSize]：部分轻量化模型的简化输出</li>
+     *
+     * @param inferenceResult   ONNX推理结果对象（包含输出张量）
+     * @param expectedBatchSize 预期样本数量（需与输入特征矩阵的样本数一致）
+     * @return 解析后的预测值数组（长度 = expectedBatchSize）
+     * @throws OrtException   张量值获取失败（如底层ONNX Runtime错误）
+     * @throws ModelException 结果格式不支持或数量不匹配时抛出
+     */
+    protected float[] parseInferenceResult(OrtSession.Result inferenceResult, int expectedBatchSize)
+            throws OrtException, ModelException {
+        // 获取输出张量（默认取第一个输出节点，符合多数模型设计）
+        OnnxTensor outputTensor = (OnnxTensor) inferenceResult.get(0);
+        String modelVersion = getModelVersion();
+        Object outputValue = outputTensor.getValue(); // 统一获取输出值，避免重复调用
+
+        // 根据输出值类型分发处理（主动判断类型，替代原异常捕获逻辑，更高效）
+        if (outputValue instanceof float[][]) {
+            return parse2DOutput((float[][]) outputValue, expectedBatchSize, modelVersion);
+        } else if (outputValue instanceof float[]) {
+            return parse1DOutput((float[]) outputValue, expectedBatchSize, modelVersion);
+        } else {
+            // 不支持的输出类型（提前报错，避免后续逻辑异常）
+            throw new ModelException(String.format(
+                    "Unsupported output type for version %s - Expected float[][] or float[], but got %s",
+                    modelVersion,
+                    outputValue.getClass().getSimpleName()
+            ));
+        }
+    }
+
+    /**
+     * 解析二维输出张量 [batchSize, 1]
+     *
+     * @param output2D          二维输出数组
+     * @param expectedBatchSize 预期样本数
+     * @param modelVersion      模型版本（用于异常信息）
+     * @return 提取的预测值数组
+     * @throws ModelException 数量不匹配或单样本结果为空时抛出
+     */
+    private float[] parse2DOutput(float[][] output2D, int expectedBatchSize, String modelVersion) throws ModelException {
+        // 校验样本数量匹配
+        if (output2D.length != expectedBatchSize) {
+            throw new ModelException(buildMismatchMsg(expectedBatchSize, output2D.length, modelVersion));
+        }
+
+        // 提取每个样本的预测值（取第一列，兼容[batch,1]格式）
+        float[] predictions = new float[expectedBatchSize];
+        for (int i = 0; i < expectedBatchSize; i++) {
+            if (output2D[i] == null || output2D[i].length == 0) {
+                throw new ModelException(String.format(
+                        "Empty prediction for sample %d (Model version: %s)",
+                        i,
+                        modelVersion
+                ));
+            }
+            predictions[i] = output2D[i][0];
+        }
+        return predictions;
+    }
+
+    /**
+     * 解析一维输出张量 [batchSize]
+     *
+     * @param output1D          一维输出数组
+     * @param expectedBatchSize 预期样本数
+     * @param modelVersion      模型版本（用于异常信息）
+     * @return 直接返回一维数组（已校验长度）
+     * @throws ModelException 数量不匹配时抛出
+     */
+    private float[] parse1DOutput(float[] output1D, int expectedBatchSize, String modelVersion) throws ModelException {
+        if (output1D.length != expectedBatchSize) {
+            throw new ModelException(buildMismatchMsg(expectedBatchSize, output1D.length, modelVersion));
+        }
+        return output1D;
+    }
+
+    /**
+     * 构建数量不匹配的异常消息（复用逻辑，避免重复编码）
+     */
+    private String buildMismatchMsg(int expected, int actual, String version) {
+        return String.format(
+                "Prediction count mismatch - Input: %d, Output: %d (Model version: %s)",
+                expected,
+                actual,
+                version
+        );
+    }
+
 }

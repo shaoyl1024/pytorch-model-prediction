@@ -1,7 +1,10 @@
 package com.example.demo.service.impl;
 
+import ai.onnxruntime.OrtEnvironment;
+import com.example.demo.config.OnnxConfig;
 import com.example.demo.preprocessor.AbstractPreprocessor;
 import com.example.demo.service.AbstractModelService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -12,11 +15,18 @@ import org.springframework.stereotype.Service;
  * @Version 1.0.0
  */
 @Service("ctrV2")
+@Slf4j
 public class CtrV2Service extends AbstractModelService {
 
     private final AbstractPreprocessor preprocessor;
 
-    public CtrV2Service(@Qualifier("ctrV2Preprocessor") AbstractPreprocessor preprocessor) {
+    // 子类构造函数：必须传递父类所需的两个参数
+    public CtrV2Service(
+            @Qualifier("ctrV2Preprocessor") AbstractPreprocessor preprocessor,
+            OrtEnvironment ortEnvironment,
+            OnnxConfig onnxConfig
+    ) {
+        super(ortEnvironment, onnxConfig); // 传递给父类
         this.preprocessor = preprocessor;
     }
 
@@ -33,6 +43,7 @@ public class CtrV2Service extends AbstractModelService {
      */
     @Override
     protected String getModelVersion() {
-        return "v2";
+        return "ctr_v2";
     }
+
 }
