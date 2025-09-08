@@ -20,7 +20,7 @@ import java.util.*;
 @Service("ctrV2Preprocessor")
 @Slf4j
 @RequiredArgsConstructor
-public class CTRV2Preprocessor extends AbstractPreprocessor {
+public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
 
     // ============================================================================
     // 依赖与缓存：外部注入的配置类及本地缓存的特征列（避免重复解析）

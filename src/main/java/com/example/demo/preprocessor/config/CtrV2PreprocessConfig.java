@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package com.example.demo.preprocessor.config;
 
 import com.example.demo.domain.PreprocessorParam;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,7 @@ import java.io.InputStream;
  */
 @Configuration
 @Slf4j
-public class PreprocessorConfig {
+public class CtrV2PreprocessConfig {
 
     @Value("${model.ctr_v2.preprocessor-path}")
     private Resource preprocessorResource;

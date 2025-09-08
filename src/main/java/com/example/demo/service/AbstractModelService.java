@@ -5,7 +5,7 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import com.example.demo.config.ModelContext;
-import com.example.demo.config.OnnxConfig;
+import com.example.demo.config.OnnxModelConfig;
 import com.example.demo.exception.ModelException;
 import com.example.demo.preprocessor.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public abstract class AbstractModelService {
     /**
      * ONNX模型配置（管理多版本模型上下文，由Spring注入）
      */
-    private final OnnxConfig onnxConfig;
+    private final OnnxModelConfig onnxConfig;
 
     // ============================================================================
     // 抽象方法：子类必须实现的差异化逻辑

@@ -1,7 +1,7 @@
 package com.example.demo.service.impl;
 
 import ai.onnxruntime.OrtEnvironment;
-import com.example.demo.config.OnnxConfig;
+import com.example.demo.config.OnnxModelConfig;
 import com.example.demo.preprocessor.AbstractPreprocessor;
 import com.example.demo.service.AbstractModelService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +16,14 @@ import org.springframework.stereotype.Service;
  */
 @Service("ctrV1")
 @Slf4j
-public class CtrV1Service extends AbstractModelService {
+public class CtrV1PredictServiceImpl extends AbstractModelService {
 
     private final AbstractPreprocessor preprocessor;
 
-    public CtrV1Service(
+    public CtrV1PredictServiceImpl(
             @Qualifier("ctrV1Preprocessor") AbstractPreprocessor preprocessor,
             OrtEnvironment ortEnvironment,
-            OnnxConfig onnxConfig
+            OnnxModelConfig onnxConfig
     ) {
         super(ortEnvironment, onnxConfig); // 传递给父类
         this.preprocessor = preprocessor;

@@ -21,7 +21,7 @@ import java.util.*;
  */
 @Service("ctrV1Preprocessor")
 @Slf4j
-public class CTRV1Preprocessor extends AbstractPreprocessor {
+public class CTRV1PreprocessorImpl extends AbstractPreprocessor {
 
     // ============================================================================
     // 私有参数：从Pickle文件加载的预处理配置（初始化后不可变）
