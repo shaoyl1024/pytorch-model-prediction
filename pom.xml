@@ -11,9 +11,9 @@
     </parent>
 
     <groupId>com.example.demo</groupId>
-    <artifactId>pytorch-model-prediction</artifactId>
+    <artifactId>dsp-model-prediction</artifactId>
     <version>1.0.0</version>
-    <name>pytorch-model-prediction</name>
+    <name>dsp-model-prediction</name>
     <description>模型线上预测服务</description>
 
     <properties>

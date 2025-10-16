@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 /**
  * @Description CTR v2模型服务实现类
  * @Author charles
- * @Date 2025/9/5 23:50
+ * @Date 2025/9/10 17:47
  * @Version 1.0.0
  */
 @Service("ctrV2")
@@ -31,7 +31,7 @@ public class CtrV2PredictServiceImpl extends AbstractModelService {
     }
 
     /**
-     * 实现父类抽象方法：提供CTR v2模型的预处理器
+     * 实现父类抽象方法：提供CTR v4模型的预处理器
      */
     @Override
     protected AbstractPreprocessor getPreprocessor() {
@@ -39,7 +39,7 @@ public class CtrV2PredictServiceImpl extends AbstractModelService {
     }
 
     /**
-     * 实现父类抽象方法：提供CTR v2模型的版本标识
+     * 实现父类抽象方法：提供CTR v4模型的版本标识
      */
     @Override
     protected String getModelVersion() {

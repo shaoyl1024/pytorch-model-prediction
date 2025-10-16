@@ -71,7 +71,7 @@ public abstract class AbstractModelService {
             log.info("Model [{}] start prediction - Sample count: {}", modelVersion, sampleCount);
 
             // Step 2: 特征预处理（子类实现）
-            log.debug("Model [{}] start feature preprocessing", modelVersion);
+            log.info("Model [{}] start feature preprocessing", modelVersion);
             float[][] processedFeatures = getPreprocessor().batchPreprocess(rawData);
             log.info("Model [{}] preprocessing completed - Feature shape: {}×{}",
                     modelVersion, processedFeatures.length, processedFeatures[0].length);
@@ -120,7 +120,7 @@ public abstract class AbstractModelService {
         OrtSession targetSession = modelContext.getSession();
         String inputNodeName = modelContext.getInputNodeName();
         String outputNodeName = modelContext.getOutputNodeName();
-        log.debug("Using model resources - Session: {}, Input node: {}, Output node: {}",
+        log.info("Using model resources - Session: {}, Input node: {}, Output node: {}",
                 targetSession.hashCode(), inputNodeName, outputNodeName);
 
         // Step 3: 准备输入数据（FloatBuffer）

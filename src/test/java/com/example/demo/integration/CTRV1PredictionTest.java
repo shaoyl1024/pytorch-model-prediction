@@ -1,3 +1,5 @@
+package com.example.demo.integration;
+
 import com.example.demo.PredictionApplication;
 import com.example.demo.data.TestDataLoaderService;
 import com.example.demo.domain.PredictionResult;
@@ -17,7 +19,7 @@ import java.util.Map;
  */
 @SpringBootTest(classes = PredictionApplication.class)
 @Slf4j
-class CTRV2PredictionTest {
+class CTRV1PredictionTest {
 
     @Autowired
     private TestDataLoaderService dataLoaderService;
@@ -43,8 +45,8 @@ class CTRV2PredictionTest {
         }
         log.info("Successfully loaded {} test samples from data source", rawSamples.size());
 
-        // 步骤2：使用CTR v2模型执行预测（定时任务默认模型）
-        String modelVersion = "ctr_v2";
+        // 步骤2：使用CTR v1模型执行预测（定时任务默认模型）
+        String modelVersion = "ctr_v1";
         AbstractModelService modelService = modelServiceFactory.getServiceByVersion(modelVersion);
         float[] ctrProbabilities = modelService.predict(rawSamples);
         if (ctrProbabilities.length != rawSamples.size()) {

@@ -16,7 +16,7 @@ import java.util.Set;
  * @Version 1.0.0
  */
 @Data
-public class BasePreprocessorParam {
+public class PreprocessorBaseParam {
 
     @JsonProperty("num_params")
     private Map<String, NumericParam> numericParams;

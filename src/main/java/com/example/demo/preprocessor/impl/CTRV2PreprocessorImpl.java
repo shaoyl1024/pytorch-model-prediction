@@ -1,8 +1,8 @@
 package com.example.demo.preprocessor.impl;
 
-import com.example.demo.preprocessor.config.ctrv2.CtrV2PreprocessorParam;
 import com.example.demo.exception.ModelException;
 import com.example.demo.preprocessor.AbstractPreprocessor;
+import com.example.demo.preprocessor.config.ctv2.CtrV2PreprocessorParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @Description 基于配置类的CTR v2预处理器
  * @Author charles
- * @Date 2025/9/6 01:20
+ * @Date 2025/9/10 01:20
  * @Version 1.0.0
  */
 @Service("ctrV2Preprocessor")
@@ -165,44 +165,42 @@ public class CTRV2PreprocessorImpl extends AbstractPreprocessor {
 
     /**
      * 数值特征预处理（实现父类抽象方法）
-     * 流程：1. 缺失值填充（用均值） 2. Log1p转换（处理长尾分布） 3. 标准化（(x-中位数)/标准差）
+     * 流程：1. 缺失值填充（用中位数） 2. Log1p转换（处理长尾分布） 3. 标准化（(x-均值)/标准差）
      * 增强：结果四舍五入保留6位小数，避免浮点精度问题
      * @param rawVal 原始数值特征值（可能为空/非法字符串）
-     * @param numericCol 数值特征列名（用于获取对应预处理参数）
+     * @param columnName 数值特征列名（用于获取对应预处理参数）
      * @return 处理后的浮点型特征值（适配模型输入）
      */
     @Override
-    protected float processNumericFeature(String rawVal, String numericCol) {
-        CtrV2PreprocessorParam.NumericParam param = getNumericParam(numericCol);
+    protected float processNumericFeature(String rawVal, String columnName) {
+        CtrV2PreprocessorParam.NumericParam param = getNumericParam(columnName);
         if (param == null) {
-            log.error("CTR v2: Numeric param DTO is null for column '{}'", numericCol);
+            log.warn("Numeric parameter not found for column: {}, using default value 0", columnName);
             return 0.0f;
         }
 
         try {
-            // 1. 处理缺失值/空值：用均值填充（CTR v2特有逻辑）
+            // 1. 处理缺失值/空值：用中位数填充（CTR v2特有逻辑）
             double numValue = (rawVal == null || rawVal.trim().isEmpty())
-                    ? param.getMean()
+                    ? param.getMedian()
                     : Double.parseDouble(rawVal.trim());
 
             // 2. Log1p转换：处理数值长尾分布，确保输入≥LOG1P_LOWER_BOUND（避免log1p(x)≤-1导致NaN）
             numValue = Math.max(numValue, LOG1P_LOWER_BOUND);
             double logValue = Math.log1p(numValue);
 
-            // 3. 标准化：(log转换后的值 - 中位数) / 安全标准差（避免除零）
+            // 3. 标准化：(log转换后的值 - 均值) / 安全标准差（避免除零）
             double safeScale = Math.max(param.getScale(), MIN_SCALE);
-            double rawResult = (logValue - param.getMedian()) / safeScale;
+            double rawResult = (logValue - param.getMean()) / safeScale;
 
-            // 4. 四舍五入保留6位小数（减少浮点精度差异影响）
-            BigDecimal roundedResult = new BigDecimal(rawResult)
-                    .setScale(6, RoundingMode.HALF_UP);
+            float finalResult = (float) rawResult;
 
-            return roundedResult.floatValue();
+            return finalResult;
 
         } catch (NumberFormatException e) {
             // 解析失败时用中位数填充（降级策略）
             log.warn("CTR v2: Failed to parse numeric value '{}' for column '{}', use median: {}",
-                    rawVal, numericCol, param.getMedian());
+                    rawVal, columnName, param.getMedian());
             return param.getMedian().floatValue();
         }
     }

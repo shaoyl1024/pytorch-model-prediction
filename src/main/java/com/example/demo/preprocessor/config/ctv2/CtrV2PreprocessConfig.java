@@ -1,4 +1,4 @@
-package com.example.demo.preprocessor.config.ctrv3;
+package com.example.demo.preprocessor.config.ctv2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -18,16 +18,16 @@ import java.io.InputStream;
  */
 @Configuration
 @Slf4j
-public class CtrV3PreprocessConfig {
+public class CtrV2PreprocessConfig {
 
-    @Value("${model.ctr_v3.preprocessor-path}")
+    @Value("${model.ctr_v2.preprocessor-path}")
     private Resource preprocessorResource;
 
-    @Bean(name = "ctrV3PreprocessorParam")
-    public CtrV3PreprocessorParam preprocessorParam() {
+    @Bean(name = "ctrV2PreprocessorParam")
+    public CtrV2PreprocessorParam preprocessorParam() {
         try (InputStream is = preprocessorResource.getInputStream()) {
             ObjectMapper objectMapper = new ObjectMapper();
-            CtrV3PreprocessorParam param = objectMapper.readValue(is, CtrV3PreprocessorParam.class);
+            CtrV2PreprocessorParam param = objectMapper.readValue(is, CtrV2PreprocessorParam.class);
 
             log.info("Preprocessing configuration loaded successfully. Number of numeric features: {}, number of categorical features: {}",
                     param.getConfig().getNumCols().size(),
