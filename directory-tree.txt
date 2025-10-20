@@ -1,0 +1,145 @@
+dsp-model-prediction/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   ├── com/
+│   │   │       ├── uplivo/
+│   │   │           ├── mdsp/
+│   │   │               ├── config/
+│   │   │               │   ├── ModelContext.java
+│   │   │               │   ├── OnnxModelConfig.java
+│   │   │               │   └── OrtEnvironmentConfig.java
+│   │   │               ├── controller/
+│   │   │               │   ├── HealthController.java
+│   │   │               │   └── PredictController.java
+│   │   │               ├── data/
+│   │   │               ├── domain/
+│   │   │               │   ├── PredictionResult.java
+│   │   │               │   ├── TrafficRequest.java
+│   │   │               │   └── TrafficResponse.java
+│   │   │               ├── exception/
+│   │   │               │   └── ModelException.java
+│   │   │               ├── preprocessor/
+│   │   │               │   ├── deep_models/
+│   │   │               │   │   ├── base/
+│   │   │               │   │   │   ├── AbstractPreprocessor.java
+│   │   │               │   │   │   └── DeepBaseParam.java
+│   │   │               │   │   ├── ctr_mode/
+│   │   │               │   │       ├── v1/
+│   │   │               │   │       │   ├── CTRV1PreprocessorImpl.java
+│   │   │               │   │       │   ├── CtrV1PreprocessConfig.java
+│   │   │               │   │       │   └── CtrV1PreprocessorParam.java
+│   │   │               │   │       ├── v2/
+│   │   │               │   │           ├── CTRV2PreprocessorImpl.java
+│   │   │               │   │           ├── CtrV2PreprocessConfig.java
+│   │   │               │   │           └── CtrV2PreprocessorParam.java
+│   │   │               │   ├── linear_models/
+│   │   │               │   ├── tree_models/
+│   │   │               ├── service/
+│   │   │               │   ├── impl/
+│   │   │               │   │   ├── CtrV1PredictServiceImpl.java
+│   │   │               │   │   └── CtrV2PredictServiceImpl.java
+│   │   │               │   ├── AbstractModelService.java
+│   │   │               │   └── ModelServiceFactory.java
+│   │   │               └── PredictionApplication.java
+│   │   ├── resources/
+│   │       ├── data/
+│   │       │   └── test.txt
+│   │       ├── model/
+│   │       │   ├── ctr/
+│   │       │       ├── 202509v1/
+│   │       │       │   ├── criteo_ctr_model.onnx
+│   │       │       │   └── criteo_preprocessor.json
+│   │       │       ├── 202509v2/
+│   │       │           ├── ctr_deepfm_model.onnx
+│   │       │           └── ctr_preprocessor.json
+│   │       ├── application-dev.yml
+│   │       ├── application-grey.yml
+│   │       ├── application-prod.yml
+│   │       ├── application-test.yml
+│   │       └── application.yml
+│   ├── test/
+│       ├── java/
+│           ├── com/
+│               ├── example/
+│               ├── uplivo/
+│                   ├── mdsp/
+│                       ├── config/
+│                       ├── data/
+│                       │   └── TestDataLoaderService.java
+│                       ├── integration/
+│                       │   └── CTRV1PredictionTest.java
+│                       ├── test/
+│                       ├── unit/
+│                           ├── data/
+│                           ├── feature/
+│                           ├── service/
+├── target/
+│   ├── classes/
+│   │   ├── com/
+│   │   │   ├── uplivo/
+│   │   │       ├── mdsp/
+│   │   │           ├── config/
+│   │   │           │   ├── ModelContext.class
+│   │   │           │   ├── OnnxModelConfig.class
+│   │   │           │   └── OrtEnvironmentConfig.class
+│   │   │           ├── controller/
+│   │   │           │   ├── HealthController.class
+│   │   │           │   └── PredictController.class
+│   │   │           ├── domain/
+│   │   │           │   ├── PredictionResult.class
+│   │   │           │   ├── TrafficRequest.class
+│   │   │           │   ├── TrafficResponse$TrafficResponseBuilder.class
+│   │   │           │   └── TrafficResponse.class
+│   │   │           ├── exception/
+│   │   │           │   └── ModelException.class
+│   │   │           ├── preprocessor/
+│   │   │           │   ├── deep_models/
+│   │   │           │       ├── base/
+│   │   │           │       │   ├── AbstractPreprocessor.class
+│   │   │           │       │   ├── DeepBaseParam$CategoricalParam.class
+│   │   │           │       │   ├── DeepBaseParam$FeatureConfig.class
+│   │   │           │       │   ├── DeepBaseParam$NumericParam.class
+│   │   │           │       │   └── DeepBaseParam.class
+│   │   │           │       ├── ctr_mode/
+│   │   │           │           ├── v1/
+│   │   │           │           │   ├── CTRV1PreprocessorImpl.class
+│   │   │           │           │   ├── CtrV1PreprocessConfig.class
+│   │   │           │           │   └── CtrV1PreprocessorParam.class
+│   │   │           │           ├── v2/
+│   │   │           │               ├── CTRV2PreprocessorImpl.class
+│   │   │           │               ├── CtrV2PreprocessConfig.class
+│   │   │           │               └── CtrV2PreprocessorParam.class
+│   │   │           ├── service/
+│   │   │           │   ├── impl/
+│   │   │           │   │   ├── CtrV1PredictServiceImpl.class
+│   │   │           │   │   └── CtrV2PredictServiceImpl.class
+│   │   │           │   ├── AbstractModelService.class
+│   │   │           │   └── ModelServiceFactory.class
+│   │   │           └── PredictionApplication.class
+│   │   ├── data/
+│   │   │   └── test.txt
+│   │   ├── model/
+│   │   │   ├── ctr/
+│   │   │       ├── 202509v1/
+│   │   │       │   ├── criteo_ctr_model.onnx
+│   │   │       │   └── criteo_preprocessor.json
+│   │   │       ├── 202509v2/
+│   │   │           ├── ctr_deepfm_model.onnx
+│   │   │           └── ctr_preprocessor.json
+│   │   └── application.yml
+│   ├── generated-sources/
+│   │   ├── annotations/
+│   ├── generated-test-sources/
+│   │   ├── test-annotations/
+│   ├── test-classes/
+│       ├── com/
+│           ├── example/
+│               ├── demo/
+│                   ├── data/
+│                   │   └── TestDataLoaderService.class
+│                   ├── integration/
+│                       └── CTRV1PredictionTest.class
+├── ReadME.md
+├── directory-tree.txt
+└── pom.xml
