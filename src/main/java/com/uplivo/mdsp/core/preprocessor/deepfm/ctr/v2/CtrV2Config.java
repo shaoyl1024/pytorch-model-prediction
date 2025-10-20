@@ -20,10 +20,10 @@ import java.io.InputStream;
 @Slf4j
 public class CtrV2Config {
 
-    @Value("${model.deepfm.ctr.v2.preprocessor-path}")
+    @Value("${model.configs.ctr_v2.preprocessor-path}")
     private Resource preprocessorResource;
 
-    @Bean(name = "ctrV2PreprocessorParam")
+    @Bean(name = "ctrV2Param")
     public CtrV2Param preprocessorParam() {
         try (InputStream is = preprocessorResource.getInputStream()) {
             ObjectMapper objectMapper = new ObjectMapper();

@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Description 抽象预处理器服务父类
- * <p>设计思路：采用「模板方法模式」，封装预处理流程的公共逻辑（如批量处理、单样本流程骨架）</p>
- * <p>将差异化逻辑（如参数加载、特征列定义、特征处理规则）抽象为方法，由子类按需实现</p>
- * <p>实现“流程统一、细节定制”，避免重复编码并保证各预处理器行为一致性。</p>
+ * @Description 抽象预处理器：模板方法模式定义预处理流程
+ *
  * @Author charles
  * @Date 2025/9/5 14:11
  * @Version 1.0.0
@@ -20,23 +18,6 @@ import java.util.Map;
 @Component
 @Slf4j
 public abstract class AbstractPreprocessor {
-
-    // ============================================================================
-    // 公共常量：所有子类共享的固定配置，避免硬编码分散
-    // ============================================================================
-    /**
-     * 未知/缺失值标记（分类特征低频值、数值特征缺失均用此标记）
-     */
-    protected static final String UNK_MARKER = "UNK";
-    /**
-     * Log1p计算下界（避免输入≤-1导致NaN，log1p(x)要求x>-1）
-     */
-    protected static final double LOG1P_LOWER_BOUND = -0.999;
-    /**
-     * 最小缩放因子（避免标准化时除以0，当标准差接近0时用此值替代）
-     */
-    protected static final double MIN_SCALE = 1e-9;
-
 
     // ============================================================================
     // 抽象方法：子类必须实现的差异化逻辑（预处理核心定制点）
@@ -160,24 +141,24 @@ public abstract class AbstractPreprocessor {
      * @return 单样本处理后的特征数组（float类型，顺序：数值特征在前，分类特征在后）
      */
     public float[] singlePreprocess(Map<String, String> rawSample) {
-        // 步骤1：验证样本合法性（子类实现规则）
+        // 验证样本合法性（子类实现规则）
         validateSample(rawSample);
 
-        // 步骤2：获取特征列列表，计算特征维度
+        // 获取特征列列表，计算特征维度
         List<String> numCols = getNumericColumns();
         List<String> catCols = getCategoricalColumns();
         int totalFeatureDim = numCols.size() + catCols.size();
         float[] processedFeature = new float[totalFeatureDim];
         int featureIndex = 0; // 特征数组索引（用于按顺序填充）
 
-        // 步骤3：处理数值特征（按列顺序填充）
+        // 处理数值特征（按列顺序填充）
         for (String numCol : numCols) {
             // 从原始样本获取特征值，无值则用空字符串（子类处理时转为UNK）
             String rawVal = rawSample.getOrDefault(numCol, "");
             processedFeature[featureIndex++] = processNumericFeature(rawVal, numCol);
         }
 
-        // 步骤4：处理分类特征（按列顺序填充，接在数值特征后）
+        // 处理分类特征（按列顺序填充，接在数值特征后）
         for (String catCol : catCols) {
             String rawVal = rawSample.getOrDefault(catCol, "");
             processedFeature[featureIndex++] = processCategoricalFeature(rawVal, catCol);

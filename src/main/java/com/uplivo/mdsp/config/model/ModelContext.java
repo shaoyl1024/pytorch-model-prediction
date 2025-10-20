@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
@@ -14,9 +15,11 @@ import java.util.Map;
  * @Date 2025/9/6 00:28
  * @Version 1.0.0
  */
+@Slf4j
 @Getter
 @Builder
 @AllArgsConstructor
+@ToString(exclude = "session")
 public class ModelContext {
 
     /**
@@ -107,26 +110,6 @@ public class ModelContext {
     public String toSimpleString() {
         return String.format("ModelContext{id='%s', name='%s', version='%s', type='%s', input='%s', output='%s'}",
                 modelId, modelName, modelVersion, modelType, inputNodeName, outputNodeName);
-    }
-
-    /**
-     * 获取模型信息摘要
-     */
-    public String getModelInfo() {
-        return String.format("%s-%s (%s)", modelName, modelVersion, modelType);
-    }
-
-    /**
-     * 安全关闭会话
-     */
-    public void safeClose() {
-        if (session != null) {
-            try {
-                session.close();
-            } catch (Exception e) {
-                // 忽略关闭异常，记录日志即可
-            }
-        }
     }
 
 }

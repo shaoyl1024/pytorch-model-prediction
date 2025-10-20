@@ -1,5 +1,6 @@
 package com.uplivo.mdsp.core.preprocessor.deepfm.ctr.v1;
 
+import com.uplivo.mdsp.common.constants.ModelConstants;
 import com.uplivo.mdsp.common.exception.ModelException;
 import com.uplivo.mdsp.core.preprocessor.deepfm.base.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
@@ -185,11 +186,11 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
                     : Double.parseDouble(rawVal.trim());
 
             // 2. Log1p转换：处理数值长尾分布，确保输入≥LOG1P_LOWER_BOUND（避免log1p(x)≤-1导致NaN）
-            numValue = Math.max(numValue, LOG1P_LOWER_BOUND);
+            numValue = Math.max(numValue, ModelConstants.LOG1P_LOWER_BOUND);
             double logValue = Math.log1p(numValue);
 
             // 3. 标准化：(log转换后的值 - 中位数) / 安全标准差（避免除零）
-            double safeScale = Math.max(param.getScale(), MIN_SCALE);
+            double safeScale = Math.max(param.getScale(), ModelConstants.MIN_SCALE);
             double rawResult = (logValue - param.getMedian()) / safeScale;
 
             // 4. 四舍五入保留6位小数（减少浮点精度差异影响）
@@ -223,7 +224,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
 
         // 1. 空值/空白值→UNK标记（统一未知值表示）
         String processedVal = (rawVal == null || rawVal.trim().isEmpty())
-                ? UNK_MARKER
+                ? ModelConstants.UNK_MARKER
                 : rawVal.trim();
 
         // 2. 低频值过滤：不在高频集合中的值→UNK（减少稀疏性，符合配置规则）
@@ -231,7 +232,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
         if (!highFreqSet.isEmpty() && !highFreqSet.contains(processedVal)) {
             log.debug("CTR v1: Low-frequency value '{}' for column '{}' replaced with UNK",
                     processedVal, categoricalCol);
-            processedVal = UNK_MARKER;
+            processedVal = ModelConstants.UNK_MARKER;
         }
 
         // 3. 标签编码：根据配置的映射表转换，无匹配→默认编码

@@ -1,7 +1,9 @@
 package com.uplivo.mdsp.core.preprocessor.deepfm.ctr.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.uplivo.mdsp.config.properties.ModelProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +22,10 @@ import java.io.InputStream;
 @Slf4j
 public class CtrV1Config {
 
-    @Value("${model.deepfm.ctr.v1.preprocessor-path}")
+    @Value("${model.configs.ctr_v1.preprocessor-path}")
     private Resource preprocessorResource;
 
-    @Bean(name = "ctrV1PreprocessorParam")
+    @Bean(name = "ctrV1Param")
     public CtrV1Param preprocessorParam() {
         try (InputStream is = preprocessorResource.getInputStream()) {
             ObjectMapper objectMapper = new ObjectMapper();

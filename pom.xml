@@ -11,9 +11,9 @@
     </parent>
 
     <groupId>com.example.demo</groupId>
-    <artifactId>dsp-model-prediction</artifactId>
+    <artifactId>dsp-insight-engine</artifactId>
     <version>1.0.0</version>
-    <name>dsp-model-prediction</name>
+    <name>dsp-insight-engine</name>
     <description>模型线上预测服务</description>
 
     <properties>

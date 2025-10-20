@@ -1,21 +1,42 @@
 spring:
   application:
-    name: dsp-model-prediction
+    name: dsp-prediction-engine
 
 model:
-  deepfm:
-    ctr:
-      v1:
-        model-path: classpath:model/ctr/v1/criteo_ctr_model.onnx
-        preprocessor-path: classpath:model/ctr/v1/criteo_preprocessor.json
-        input-node: criteo_features
-        output-node: ctr_prob
-        batch-size: 100
-        optimization-level: 1
-      v2:
-        model-path: classpath:model/ctr/v2/ctr_deepfm_model.onnx
-        preprocessor-path: classpath:model/ctr/v2/ctr_preprocessor.json
-        input-node: features
-        output-node: click_prob
-        batch-size: 100
-        optimization-level: 1
+  configs:
+    ctr_v1:
+      path: classpath:models/ctr/v1/criteo_ctr_model.onnx
+      preprocessor-path: classpath:models/ctr/v1/criteo_preprocessor.json
+      input-node: criteo_features
+      output-node: ctr_prob
+      enabled: true
+      name: ctr_model
+      version: v1
+      type: CTR
+    ctr_v2:
+      path: classpath:models/ctr/v2/ctr_deepfm_model.onnx
+      preprocessor-path: classpath:models/ctr/v2/ctr_preprocessor.json
+      input-node: features
+      output-node: click_prob
+      enabled: true
+      name: ctr_model
+      version: v2
+      type: CTR
+
+# 条件路由配置
+condition:
+  enabled: true
+  default-model: UNK
+  rules:
+    - name: adx_20002_rule
+      target-model: ctr_v2
+      enabled: true
+      conditions:
+        - field: adx
+          value: 20020
+    - name: adx_20014_rule
+      target-model: ctr_v2
+      enabled: true
+      conditions:
+        - field: adx
+          value: 20014

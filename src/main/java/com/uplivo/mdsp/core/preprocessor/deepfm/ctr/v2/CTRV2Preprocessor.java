@@ -1,5 +1,6 @@
 package com.uplivo.mdsp.core.preprocessor.deepfm.ctr.v2;
 
+import com.uplivo.mdsp.common.constants.ModelConstants;
 import com.uplivo.mdsp.common.exception.ModelException;
 import com.uplivo.mdsp.core.preprocessor.deepfm.base.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
@@ -189,7 +190,7 @@ public class CTRV2Preprocessor extends AbstractPreprocessor {
                     param.getMedian(), param.getMean(), param.getScale());
 
             // 2. Log1p转换：处理数值长尾分布，确保输入≥LOG1P_LOWER_BOUND（避免log1p(x)≤-1导致NaN）
-            double clippedValue = Math.max(numValue, LOG1P_LOWER_BOUND);
+            double clippedValue = Math.max(numValue, ModelConstants.LOG1P_LOWER_BOUND);
             log.info("  After clipping: {}", clippedValue);
 
             double logValue = Math.log1p(clippedValue);
@@ -197,7 +198,7 @@ public class CTRV2Preprocessor extends AbstractPreprocessor {
 
 
             // 3. 标准化：(log转换后的值 - 均值) / 安全标准差（避免除零）
-            double safeScale = Math.max(param.getScale(), MIN_SCALE);
+            double safeScale = Math.max(param.getScale(), ModelConstants.MIN_SCALE);
             double standardizedValue = (logValue - param.getMean()) / safeScale;
             log.info("  Standardized: ({} - {}) / {} = {}",
                     logValue, param.getMean(), safeScale, standardizedValue);
@@ -232,7 +233,7 @@ public class CTRV2Preprocessor extends AbstractPreprocessor {
 
         // 1. 空值/空白值→UNK标记（统一未知值表示）
         String processedVal = (rawVal == null || rawVal.trim().isEmpty())
-                ? UNK_MARKER
+                ? ModelConstants.UNK_MARKER
                 : rawVal.trim();
 
         // 2. 低频值过滤：不在高频集合中的值→UNK（减少稀疏性，符合配置规则）
@@ -240,7 +241,7 @@ public class CTRV2Preprocessor extends AbstractPreprocessor {
         if (!highFreqSet.isEmpty() && !highFreqSet.contains(processedVal)) {
             log.debug("CTR v2: Low-frequency value '{}' for column '{}' replaced with UNK",
                     processedVal, categoricalCol);
-            processedVal = UNK_MARKER;
+            processedVal = ModelConstants.UNK_MARKER;
         }
 
         // 3. 标签编码：根据配置的映射表转换，无匹配→默认编码

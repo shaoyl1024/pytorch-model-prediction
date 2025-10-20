@@ -4,21 +4,22 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
-import com.uplivo.mdsp.config.model.ModelContext;
-import com.uplivo.mdsp.config.model.OnnxModelConfig;
 import com.uplivo.mdsp.common.exception.ModelException;
+import com.uplivo.mdsp.config.model.ModelConfigManager;
+import com.uplivo.mdsp.config.model.ModelContext;
 import com.uplivo.mdsp.core.preprocessor.deepfm.base.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.FloatBuffer;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @Description 模型服务抽象基类（模板方法模式）
- * <p>统一预测流程：输入校验 → 特征预处理 → 模型推理 → 结果返回</p>
+ * @Description 模型服务抽象基类：模板方法定义推理流程
+ *
  * @Author charles
  * @Date 2025/9/5 23:48
  * @Version 1.0.0
@@ -35,7 +36,7 @@ public abstract class AbstractModelService {
     /**
      * ONNX模型配置（管理多版本模型上下文，由Spring注入）
      */
-    private final OnnxModelConfig onnxConfig;
+    private final ModelConfigManager modelConfigManager;
 
     // ============================================================================
     // 抽象方法：子类必须实现的差异化逻辑
@@ -62,37 +63,24 @@ public abstract class AbstractModelService {
      */
     public final float[] predict(List<Map<String, String>> rawData) throws ModelException {
         try {
-            // Step 1: 输入校验（通用逻辑）
             if (rawData == null || rawData.isEmpty()) {
                 throw new IllegalArgumentException("Raw data cannot be null or empty");
             }
-            int sampleCount = rawData.size();
-            String modelVersion = getModelVersion();
-            log.info("Model [{}] start prediction - Sample count: {}", modelVersion, sampleCount);
 
-            // Step 2: 特征预处理（子类实现）
-            log.info("Model [{}] start feature preprocessing", modelVersion);
+            String modelVersion = getModelVersion();
+            log.info("Model [{}] start prediction - Sample count: {}", modelVersion, rawData.size());
+
+            // 特征预处理（子类实现）
             float[][] processedFeatures = getPreprocessor().batchPreprocess(rawData);
             log.info("Model [{}] preprocessing completed - Feature shape: {}×{}",
                     modelVersion, processedFeatures.length, processedFeatures[0].length);
 
-            // Step 3: 模型推理（子类实现核心逻辑，父类提供工具方法）
-            log.info("Model [{}] start inference", modelVersion);
-
+            // 模型推理（子类实现核心逻辑，父类提供工具方法）
             float[] predictionResults = doPredict(processedFeatures);
 
-            // Step 4: 结果校验与返回（通用逻辑）
-            if (predictionResults.length != sampleCount) {
-                log.warn("Model [{}] result count mismatch - Input: {}, Output: {}",
-                        modelVersion, sampleCount, predictionResults.length);
-            }
             log.info("Model [{}] prediction completed", modelVersion);
-
             return predictionResults;
 
-        } catch (IllegalArgumentException e) {
-            log.error("Model [{}] invalid input - {}", getModelVersion(), e.getMessage());
-            throw new ModelException("Model [" + getModelVersion() + "] invalid input: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("Model [{}] prediction process failed - Unexpected error", getModelVersion(), e);
             throw new ModelException("Model [" + getModelVersion() + "] prediction process failed", e);
@@ -107,7 +95,7 @@ public abstract class AbstractModelService {
      * @throws ModelException
      */
     protected float[] doPredict(float[][] features) throws ModelException {
-        // Step 1: 输入校验（复用父类工具方法）
+        // 输入校验（复用父类工具方法）
         validateInputFeatures(features);
         int batchSize = features.length;
         int featureDim = features[0].length;
@@ -115,7 +103,7 @@ public abstract class AbstractModelService {
         log.info("Batch prediction started - Model version: {}, Sample count: {}, Feature dimension: {}",
                 modelVersion, batchSize, featureDim);
 
-        // Step 2: 获取模型上下文（父类已处理空指针，直接使用）
+        // 获取模型上下文（父类已处理空指针，直接使用）
         ModelContext modelContext = getModelContext();
         OrtSession targetSession = modelContext.getSession();
         String inputNodeName = modelContext.getInputNodeName();
@@ -123,10 +111,10 @@ public abstract class AbstractModelService {
         log.info("Using model resources - Session: {}, Input node: {}, Output node: {}",
                 targetSession.hashCode(), inputNodeName, outputNodeName);
 
-        // Step 3: 准备输入数据（FloatBuffer）
+        // 准备输入数据（FloatBuffer）
         FloatBuffer inputBuffer = prepareInputBuffer(features, batchSize, featureDim);
 
-        // Step 4: 创建输入张量并执行推理（try-with-resources确保资源释放）
+        // 创建输入张量并执行推理（try-with-resources确保资源释放）
         try (OnnxTensor inputTensor = createOnnxTensor(inputBuffer, new long[]{batchSize, featureDim})) {
             // 构建输入映射（仅包含目标输入节点）
             Map<String, OnnxTensor> inputs = Collections.singletonMap(inputNodeName, inputTensor);
@@ -195,7 +183,7 @@ public abstract class AbstractModelService {
      */
     protected ModelContext getModelContext() {
         String version = getModelVersion();
-        ModelContext context = onnxConfig.getModelContext(version);
+        ModelContext context = modelConfigManager.getModelContext(version);
         if (context == null || context.getSession() == null) {
             log.error("Model context not initialized for version: {}", version);
             return null;
@@ -294,6 +282,27 @@ public abstract class AbstractModelService {
                 actual,
                 version
         );
+    }
+
+    /**
+     * 获取模型信息
+     */
+    public Map<String, Object> getModelInfo() {
+        Map<String, Object> info = new HashMap<>();
+        try {
+            ModelContext context = getModelContext();
+            info.put("modelId", context.getModelId());
+            info.put("modelName", context.getModelName());
+            info.put("modelVersion", context.getModelVersion());
+            info.put("modelType", context.getModelType());
+            info.put("inputNode", context.getInputNodeName());
+            info.put("outputNode", context.getOutputNodeName());
+            info.put("enabled", context.isEnabled());
+            info.put("valid", context.isValid());
+        } catch (Exception e) {
+            info.put("error", e.getMessage());
+        }
+        return info;
     }
 
 }

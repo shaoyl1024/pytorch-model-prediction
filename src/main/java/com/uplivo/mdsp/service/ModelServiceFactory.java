@@ -27,6 +27,7 @@ public class ModelServiceFactory {
             serviceMap.put(version, service);
             log.info("Model service registered - version: {}, service: {}", version, service.getClass().getSimpleName());
         }
+        log.info("Total model services registered: {}", serviceMap.size());
     }
 
     public AbstractModelService getServiceByVersion(String version) {
