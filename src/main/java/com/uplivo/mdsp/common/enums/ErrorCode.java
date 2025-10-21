@@ -11,17 +11,17 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
 
-    SYSTEM_ERROR(10000, "系统内部错误"),
-    PARAM_ERROR(10001, "参数非法"),
+    SYSTEM_ERROR(10000, "System internal error"),
+    PARAM_ERROR(10001, "Invalid parameters"),
 
     // 模型相关错误
-    MODEL_LOAD_FAILED(20000, "模型加载失败"),
-    MODEL_NOT_FOUND(20001, "模型不存在"),
-    MODEL_INFERENCE_FAILED(20002, "模型推理失败"),
+    MODEL_LOAD_FAILED(20000, "Model loading failed"),
+    MODEL_NOT_FOUND(20001, "Model not found"),
+    MODEL_INFERENCE_FAILED(20002, "Model inference failed"),
 
     // 预处理相关错误
-    PREPROCESSOR_INIT_FAILED(30000, "预处理配置初始化失败"),
-    FEATURE_INVALID(30001, "特征数据无效");
+    PREPROCESSOR_INIT_FAILED(30000, "Preprocessing configuration initialization failed"),
+    FEATURE_INVALID(30001, "Invalid feature data");
 
     private final int code;
     private final String message;
