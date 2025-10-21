@@ -1,6 +1,7 @@
 package com.uplivo.mdsp.service.impl;
 
 import ai.onnxruntime.OrtEnvironment;
+import com.uplivo.mdsp.common.constants.ModelConstants;
 import com.uplivo.mdsp.config.model.ModelConfigManager;
 import com.uplivo.mdsp.core.preprocessor.deepfm.base.AbstractPreprocessor;
 import com.uplivo.mdsp.service.AbstractModelService;
@@ -43,7 +44,7 @@ public class CtrV1PredictImpl extends AbstractModelService {
      */
     @Override
     protected String getModelVersion() {
-        return "ctr_v1";
+        return ModelConstants.CTR_V1;
     }
 
 }

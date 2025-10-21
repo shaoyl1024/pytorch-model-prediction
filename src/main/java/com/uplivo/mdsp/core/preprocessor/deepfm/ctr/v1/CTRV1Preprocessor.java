@@ -1,6 +1,7 @@
 package com.uplivo.mdsp.core.preprocessor.deepfm.ctr.v1;
 
 import com.uplivo.mdsp.common.constants.ModelConstants;
+import com.uplivo.mdsp.common.enums.ErrorCode;
 import com.uplivo.mdsp.common.exception.ModelException;
 import com.uplivo.mdsp.core.preprocessor.deepfm.base.AbstractPreprocessor;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
 
         // 校验核心配置非空
         if (featureConfig == null) {
-            throw new ModelException("CTR v1: FeatureConfig is null in preprocessor param", "NULL_FEATURE_CONFIG");
+            throw new ModelException(ErrorCode.PREPROCESSOR_INIT_FAILED, "CTR v1: FeatureConfig is null in preprocessor param");
         }
 
         // 提取并缓存特征列（转为不可修改列表，避免意外篡改）
@@ -230,7 +231,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
         // 2. 低频值过滤：不在高频集合中的值→UNK（减少稀疏性，符合配置规则）
         Set<String> highFreqSet = paramDTO.getHighFreqValues();
         if (!highFreqSet.isEmpty() && !highFreqSet.contains(processedVal)) {
-            log.debug("CTR v1: Low-frequency value '{}' for column '{}' replaced with UNK",
+            log.info("CTR v1: Low-frequency value '{}' for column '{}' replaced with UNK",
                     processedVal, categoricalCol);
             processedVal = ModelConstants.UNK_MARKER;
         }
@@ -239,7 +240,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
         Map<String, Integer> codeMap = paramDTO.getCodeMap();
         Integer code = codeMap.getOrDefault(processedVal, paramDTO.getDefaultCode());
         if (code == paramDTO.getDefaultCode()) {
-            log.debug("CTR v1: Value '{}' for column '{}' not in codeMap, use default code: {}",
+            log.info("CTR v1: Value '{}' for column '{}' not in codeMap, use default code: {}",
                     processedVal, categoricalCol, paramDTO.getDefaultCode());
         }
 
@@ -258,12 +259,12 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
     private void validateConfigParams() {
         // 校验数值特征列非空
         if (numCols == null || numCols.isEmpty()) {
-            throw new ModelException("CTR v1: Numeric columns in config are null or empty", "EMPTY_NUM_COLS");
+            throw new ModelException(ErrorCode.PREPROCESSOR_INIT_FAILED, "CTR v1: Numeric columns in config are null or empty");
         }
 
         // 校验分类特征列非空
         if (catCols == null || catCols.isEmpty()) {
-            throw new ModelException("CTR v1: Categorical columns in config are null or empty", "EMPTY_CAT_COLS");
+            throw new ModelException(ErrorCode.PREPROCESSOR_INIT_FAILED, "CTR v1: Categorical columns in config are null or empty");
         }
 
         // 校验数值参数数量匹配（警告级，允许部分缺失但记录日志）
@@ -271,7 +272,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
                 ? preprocessorParam.getNumericParams().size()
                 : 0;
         if (numericParamCount != numCols.size()) {
-            log.warn("CTR v1: Numeric param count mismatch (config has: {}, required: {})",
+            log.error("CTR v1: Numeric param count mismatch (config has: {}, required: {})",
                     numericParamCount, numCols.size());
         }
 
@@ -280,7 +281,7 @@ public class CTRV1Preprocessor extends AbstractPreprocessor {
                 ? preprocessorParam.getCategoricalParams().size()
                 : 0;
         if (categoricalParamCount != catCols.size()) {
-            log.warn("CTR v1: Categorical param count mismatch (config has: {}, required: {})",
+            log.error("CTR v1: Categorical param count mismatch (config has: {}, required: {})",
                     categoricalParamCount, catCols.size());
         }
     }
